@@ -3,9 +3,9 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
 # Configuración visual
-st.set_page_config(page_title="Gestor Streaming", page_icon="🎬")
+st.set_page_config(page_title="Gestor Streaming")
 
-st.markdown("<h1 style='text-align: center; color: #6221E5;'>🎬 Control de Clientes</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #6221E5;'> Control de Clientes</h1>", unsafe_allow_html=True)
 
 # 1. Diccionario de Precios
 PRECIOS = {
@@ -26,7 +26,7 @@ except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
 # --- SECCIÓN A: REGISTRAR ---
-with st.expander("➕ Registrar Nuevo Cliente"):
+with st.expander(" Registrar Nuevo Cliente"):
     with st.form("nuevo_cliente"):
         nombre = st.text_input("Nombre del Cliente")
         seleccionadas = st.multiselect("Selecciona las Plataformas / Combos", list(PRECIOS.keys()))
@@ -43,7 +43,7 @@ with st.expander("➕ Registrar Nuevo Cliente"):
                 })
                 df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
                 conn.update(worksheet="Hoja 1", data=df_actualizado)
-                st.success(f"✅ ¡{nombre} registrado!")
+                st.success(f" ¡{nombre} registrado!")
                 st.rerun()
 
 # --- SECCIÓN B: ELIMINAR (Lo nuevo) ---
@@ -56,14 +56,14 @@ if not df.empty:
             
             try:
                 conn.update(worksheet="Hoja 1", data=df_reducido)
-                st.warning(f"❌ Cliente {cliente_a_borrar} eliminado.")
+                st.warning(f" Cliente {cliente_a_borrar} eliminado.")
                 st.rerun()
             except Exception as e:
                 st.error("No se pudo eliminar en Google Sheets.")
 
 # --- SECCIÓN C: TABLA Y MÉTRICAS ---
 st.write("---")
-st.write("### 📋 Lista de Clientes Activos")
+st.write("###  Lista de Clientes Activos")
 if not df.empty:
     df["Total a Pagar"] = pd.to_numeric(df["Total a Pagar"], errors='coerce').fillna(0)
     st.dataframe(df, use_container_width=True, hide_index=True)
@@ -72,3 +72,4 @@ if not df.empty:
     st.metric("Recaudación Total", f"${total_mensual:,.2f}")
 else:
     st.info("La lista está vacía.")
+
