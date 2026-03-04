@@ -12,10 +12,6 @@ st.markdown("""
     .stForm { background-color: #161B22; border: 1px solid #30363D; border-radius: 10px; padding: 20px; }
     .stExpander { background-color: #161B22; border: 1px solid #30363D; }
     h1 { color: #58A6FF !important; }
-    /* Ajuste para que los selectores se vean uniformes */
-    .stSelectbox div[data-baseweb="select"] {
-        background-color: #161B22;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -42,13 +38,15 @@ with st.expander("Registrar Nuevo Cliente", expanded=True):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre del Cliente", placeholder="Escribe el nombre...")
         
+        # Ajuste de etiquetas solicitado
         seleccionadas = st.multiselect(
-            "Selecciona las Plataformas / Combos", 
+            "Plataformas y Combos", 
             options=list(PRECIOS.keys()),
+            placeholder="Selecciona el servicio",
             key="plataformas_input"
         )
         
-        # Ajuste del selector de dia para que se vea como el de plataformas
+        # Selector de dia estilizado
         opciones_dias = [str(i) for i in range(1, 32)]
         dia_seleccionado = st.selectbox(
             "Día de Corte", 
@@ -58,13 +56,10 @@ with st.expander("Registrar Nuevo Cliente", expanded=True):
             key="dia_input"
         )
         
-        # Se elimina el texto "Total a pagar calculado" que se mostraba aqui
-        
         btn_guardar = st.form_submit_button("Guardar en la Base de Datos")
         
         if btn_guardar:
             if nombre and seleccionadas and dia_seleccionado:
-                # Calculo interno del total
                 total_actual = sum(PRECIOS.get(p, 0) for p in seleccionadas)
                 
                 nueva_fila = pd.DataFrame({
@@ -98,19 +93,17 @@ if not df.empty:
 st.write("---")
 st.write("### Clientes Activos")
 if not df.empty:
-    # Eliminamos la columna "Total" que aparecia vacia (None) en tu imagen
-    # Nos quedamos solo con las columnas importantes
-    columnas_visibles = ["Nombre", "Plataformas", "Dia", "Total a Pagar"]
-    df_mostrar = df[[c for c in columnas_visibles if c in df.columns]]
+    # Mostramos solo las columnas necesarias, eliminando "Total" si existe
+    columnas_deseadas = ["Nombre", "Plataformas", "Dia", "Total a Pagar"]
+    df_final = df[[c for c in columnas_deseadas if c in df.columns]]
     
-    # Asegurar que el total sea numerico
-    if "Total a Pagar" in df_mostrar.columns:
-        df_mostrar["Total a Pagar"] = pd.to_numeric(df_mostrar["Total a Pagar"], errors='coerce').fillna(0)
+    if "Total a Pagar" in df_final.columns:
+        df_final["Total a Pagar"] = pd.to_numeric(df_final["Total a Pagar"], errors='coerce').fillna(0)
     
-    st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+    st.dataframe(df_final, use_container_width=True, hide_index=True)
     
-    if "Total a Pagar" in df_mostrar.columns:
-        recaudacion = df_mostrar["Total a Pagar"].sum()
+    if "Total a Pagar" in df_final.columns:
+        recaudacion = df_final["Total a Pagar"].sum()
         st.metric("Recaudacion Mensual", f"${recaudacion:,.2f}")
 else:
     st.write("No hay registros en este momento")
