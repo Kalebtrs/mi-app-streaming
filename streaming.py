@@ -12,7 +12,7 @@ PRECIOS = {
     "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
 }
 
-st.title("📱 Gestor de Pagos Streaming")
+st.title("Gestor de Pagos Streaming")
 
 # 2. Formulario para agregar/editar cliente
 with st.expander("➕ Agregar o Editar Cliente"):
@@ -54,3 +54,4 @@ with st.sidebar:
     st.header("Lista de Precios")
     df_precios = pd.DataFrame(list(PRECIOS.items()), columns=['Plataforma', 'Precio'])
     st.table(df_precios)
+
