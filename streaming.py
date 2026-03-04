@@ -3,10 +3,11 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. CONFIGURACIÓN DE PÁGINA
+# 1. CONFIGURACIÓN DE PÁGINA compacta
 st.set_page_config(page_title="Streaming Center", page_icon="🎬", layout="centered")
 
-# 2. DISEÑO PROFESIONAL DE PLATAFORMAS
+# 2. DISEÑO AJUSTADO Y MÁS PEQUEÑO
+# Se ha reducido el padding y margin del header-spin para hacerlo más bajito.
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #F7F7F9 !important; }
@@ -15,41 +16,29 @@ st.markdown("""
     .header-spin {
         background-color: #6221E5;
         color: white;
-        padding: 50px 20px 30px 20px;
-        margin: -80px -500px 30px -500px;
+        padding: 15px 20px 10px 20px; /* Mucho menos padding */
+        margin: -80px -500px 15px -500px; /* Margen inferior reducido */
         text-align: center;
-        border-radius: 0 0 50px 50px;
+        border-radius: 0 0 30px 30px; /* Bordes menos pronunciados */
     }
-
-    /* Contenedor de Logos de Plataformas */
-    .platform-grid {
-        display: flex;
-        justify-content: space-around;
-        margin: 20px 0 30px 0;
+    
+    .header-spin h1 {
+        margin: 0;
+        font-size: 20px; /* Fuente más pequeña */
     }
-    .platform-card {
-        text-align: center;
-        width: 70px;
-    }
-    .img-circle {
-        width: 60px;
-        height: 60px;
-        background-color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        font-size: 28px; /* Aquí irán los logos */
-        margin-bottom: 8px;
+    
+    .header-spin p {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 12px; /* Fuente de subtítulo más pequeña */
     }
 
     /* Estilo de Tarjetas de Clientes */
     .client-box {
         background-color: white;
-        padding: 15px;
-        border-radius: 20px;
-        margin-bottom: 10px;
+        padding: 10px 15px; /* Más compacto */
+        border-radius: 15px; /* Bordes más pequeños */
+        margin-bottom: 8px; /* Menos espacio entre tarjetas */
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -62,12 +51,18 @@ st.markdown("""
         border-radius: 50px !important;
         width: 100% !important;
         font-weight: bold !important;
+        padding: 10px; /* Botón un poco más compacto */
+    }
+    
+    /* Compactar inputs */
+    div.stNumberInput, div.stMultiSelect, div.stTextInput {
+        margin-bottom: 5px; /* Menos espacio entre campos del formulario */
     }
     </style>
     
     <div class="header-spin">
-        <h1 style="margin:0;">¡Qué gusto verte!</h1>
-        <p style="margin:0; opacity:0.8;">Tu Central de Streaming</p>
+        <h1>¡Qué gusto verte!</h1>
+        <p>Tu Central de Streaming</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -78,41 +73,35 @@ try:
 except:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# 4. SECCIÓN DE ICONOS DE PLATAFORMAS
-st.markdown("### Seleccionar Plataforma")
-st.markdown("""
-    <div class="platform-grid">
-        <div class="platform-card"><div class="img-circle">🔴</div><small>Netflix</small></div>
-        <div class="platform-card"><div class="img-circle">🔵</div><small>Disney+</small></div>
-        <div class="platform-card"><div class="img-circle">🟣</div><small>HBO Max</small></div>
-        <div class="platform-card"><div class="img-circle">🟠</div><small>Paramount</small></div>
-    </div>
-""", unsafe_allow_html=True)
+# --- SECCIÓN DE ICONOS ELIMINADA COMO SOLICITASTE ---
 
-# 5. FORMULARIO DE REGISTRO
-with st.form("registro_streaming"):
-    nombre = st.text_input("NOMBRE DEL CLIENTE", placeholder="Ej: Juan Pérez")
-    plataformas = st.multiselect("¿QUÉ PLATAFORMAS CONTRATÓ?", 
-                                ["Netflix Premium", "Disney+ / Star+", "HBO Max", "Vix Premium", "Prime Video", "Combo Total"])
-    
-    col1, col2 = st.columns(2)
-    dia = col1.number_input("DÍA DE CORTE", 1, 31, datetime.now().day)
-    costo = col2.number_input("PRECIO VENTA $", 0, 1000, 150)
-    
-    if st.form_submit_button("REGISTRAR VENTA"):
-        if nombre and plataformas:
-            new_data = pd.DataFrame([{
-                "Nombre": nombre.upper(),
-                "Plataformas": ", ".join(plataformas),
-                "Total": costo,
-                "Dia": int(dia)
-            }])
-            df = pd.concat([df, new_data], ignore_index=True)
-            conn.update(data=df)
-            st.success("¡Venta registrada con éxito!")
-            st.rerun()
+# 4. FORMULARIO DE REGISTRO
+with st.container():
+    st.markdown("### Registrar Venta", help="Formulario compacto para añadir nuevos clientes.")
+    with st.form("registro_streaming", clear_on_submit=True):
+        nombre = st.text_input("NOMBRE DEL CLIENTE", placeholder="Ej: Juan Pérez")
+        plataformas = st.multiselect("¿QUÉ PLATAFORMAS CONTRATÓ?", 
+                                    ["Netflix Premium", "Disney+ / Star+", "HBO Max", "Vix Premium", "Prime Video", "Combo Total"])
+        
+        col1, col2 = st.columns(2)
+        dia = col1.number_input("DÍA DE CORTE", 1, 31, datetime.now().day)
+        costo = col2.number_input("PRECIO VENTA $", 0, 1000, 150)
+        
+        # Botón más compacto
+        if st.form_submit_button("REGISTRAR VENTA"):
+            if nombre and plataformas:
+                new_data = pd.DataFrame([{
+                    "Nombre": nombre.upper(),
+                    "Plataformas": ", ".join(plataformas),
+                    "Total": costo,
+                    "Dia": int(dia)
+                }])
+                df = pd.concat([df, new_data], ignore_index=True)
+                conn.update(data=df)
+                st.success("¡Venta registrada!")
+                st.rerun()
 
-# 6. LISTADO DE CLIENTES ACTIVOS
+# 5. LISTADO DE CLIENTES ACTIVOS
 st.markdown("### Clientes Activos")
 if not df.empty:
     # Mostrar alertas de cobro para hoy
@@ -123,18 +112,19 @@ if not df.empty:
     for _, fila in cobros_hoy.iterrows():
         st.error(f"⚠️ COBRAR HOY A: {fila['Nombre']} (${fila['Total']})")
 
-    # Lista general
+    # Lista general más compacta
     for i, fila in df.iterrows():
         st.markdown(f"""
         <div class="client-box">
             <div>
-                <b style="color:#333;">{fila['Nombre']}</b><br>
-                <small style="color:#666;">{fila['Plataformas']} (Día {int(fila['Dia'])})</small>
+                <b style="color:#333; font-size:14px;">{fila['Nombre']}</b><br>
+                <small style="color:#666; font-size:11px;">{fila['Plataformas']} (Día {int(fila['Dia'])})</small>
             </div>
-            <div style="color:#6221E5; font-weight:bold;">${fila['Total']}</div>
+            <div style="color:#6221E5; font-weight:bold; font-size:14px;">${fila['Total']}</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button(f"Eliminar {fila['Nombre']}", key=f"del_{i}"):
+        # Botón de eliminar también más pequeño
+        if st.button(f"x", key=f"del_{i}", help=f"Eliminar a {fila['Nombre']}"):
             df = df.drop(i)
             conn.update(data=df)
             st.rerun()
