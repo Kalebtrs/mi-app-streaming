@@ -5,9 +5,10 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configuracion de pagina
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Mejorado para forzar alineacion a la derecha
+# 2. CSS Avanzado para alineación y botón "Ultra Llamativo"
 st.markdown("""
     <style>
+    /* Titulo con degradado */
     .main-title {
         font-size: 2.2rem !important;
         font-weight: 800;
@@ -18,43 +19,49 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* MOVER BOTON DE GUARDAR A LA DERECHA */
-    .stForm > div:last-child {
-        display: flex;
-        justify-content: flex-end;
-        width: 100%;
+    /* ALINEAR ELEMENTOS A LA DERECHA */
+    /* Alinea el botón Guardar Registro a la derecha */
+    div.stButton > button:first-child {
+        float: right;
+        margin-top: 10px;
     }
 
-    /* ESTILO DEL BOTON LLAMATIVO (Ajustado para no ser ancho completo) */
+    /* Alinea el selector de Día de Corte a la derecha */
+    div[data-baseweb="select"] {
+        justify-content: flex-end;
+    }
+
+    /* BOTON ULTRA LLAMATIVO */
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0);
         background-size: 200% auto;
         color: white !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 0.6rem 2rem !important;
-        font-size: 1rem !important;
+        padding: 0.8rem !important;
+        font-size: 1.1rem !important;
         font-weight: bold !important;
+        /*width: 100%; <- Eliminamos esto para que no ocupe todo el ancho */
         box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
         transition: 0.5s;
         text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
+    /* Efecto al pasar el mouse (Hover) */
     div.stButton > button:first-child:hover {
         background-position: right center;
-        transform: scale(1.05);
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(255, 0, 128, 0.6);
+        color: white !important;
     }
 
-    /* MOVER FLECHITA DEL SELECTBOX A LA DERECHA Y TEXTO */
-    div[data-baseweb="select"] > div {
-        text-align: right !important;
-        flex-direction: row-reverse !important;
-    }
-
-    /* Boton de eliminar */
+    /* Boton de eliminar mas sobrio pero claro */
     div.stButton > button[kind="primary"] {
         background: #FF4B2B !important;
         border-radius: 8px !important;
+        text-transform: none;
+        letter-spacing: 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -80,11 +87,10 @@ with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()), placeholder="Selecciona el servicio")
-        
         dias = [str(i) for i in range(1, 32)]
-        # El selector ahora tendra la flecha y el texto alineados a la derecha
         dia = st.selectbox("Día de Corte", options=dias, index=None, placeholder="Selecciona dia de corte")
         
+        # El botón de guardar ahora se alineará a la derecha gracias al CSS
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
                 total = sum(PRECIOS.get(s, 0) for s in servicios)
