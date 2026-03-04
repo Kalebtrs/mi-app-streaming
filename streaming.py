@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # 1. Configuración de página
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS: Diseño, espacios y alertas
+# 2. CSS: Diseño y el espacio que pediste
 st.markdown("""
     <style>
     .main-title {
@@ -20,23 +20,26 @@ st.markdown("""
     }
     div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
     
-    .stForm > div:last-child { padding-top: 60px !important; }
-
-    /* Alertas de pago */
-    .alerta-pago {
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 5px;
-        border-left: 6px solid;
+    /* ESPACIO ENTRE DÍA DE CORTE Y BOTÓN */
+    .stForm > div:last-child {
+        padding-top: 60px !important; 
     }
-    .hoy { background-color: rgba(255, 75, 75, 0.1); border-color: #ff4b4b; color: #ff4b4b; }
-    .manana { background-color: rgba(255, 215, 0, 0.1); border-color: #ffd700; color: #d4af37; }
-    
+
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0) !important;
         color: white !important;
         border-radius: 12px !important;
         font-weight: bold !important;
+        width: auto !important;
+    }
+    
+    /* Estilo para los recordatorios de pago */
+    .pago-alerta {
+        background-color: rgba(255, 75, 75, 0.1);
+        border-left: 5px solid #ff4b4b;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -54,11 +57,8 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 try:
     df = conn.read(worksheet="Hoja 1", ttl=0)
     df = df.dropna(how="all")
-    # Asegurar que existan las columnas necesarias
-    if "Pagado" not in df.columns:
-        df["Pagado"] = "NO"
 except Exception:
-    df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"])
+    df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
 # --- SECCIÓN REGISTRO ---
 with st.expander("Nuevo Cliente", expanded=False):
@@ -75,67 +75,46 @@ with st.expander("Nuevo Cliente", expanded=False):
                     "Nombre": [nombre.upper()],
                     "Plataformas": [", ".join(servicios)],
                     "Dia": [int(dia)],
-                    "Total a Pagar": [total],
-                    "Pagado": ["NO"]
+                    "Total a Pagar": [total]
                 })
-                df = pd.concat([df, nueva_fila], ignore_index=True)
-                conn.update(worksheet="Hoja 1", data=df)
+                df_act = pd.concat([df, nueva_fila], ignore_index=True)
+                conn.update(worksheet="Hoja 1", data=df_act)
                 st.rerun()
 
 # --- GESTIONAR ---
 with st.expander("Gestionar"):
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("Reiniciar todos los pagos"):
-            df["Pagado"] = "NO"
-            conn.update(worksheet="Hoja 1", data=df)
+    if not df.empty:
+        borrar = st.selectbox("Seleccionar para eliminar", df["Nombre"].unique())
+        if st.button("ELIMINAR CLIENTE", type="primary"):
+            df_new = df[df["Nombre"] != borrar]
+            conn.update(worksheet="Hoja 1", data=df_new)
             st.rerun()
-    with col_b:
-        if not df.empty:
-            borrar = st.selectbox("Eliminar cliente", df["Nombre"].unique())
-            if st.button("CONFIRMAR ELIMINAR", type="primary"):
-                df = df[df["Nombre"] != borrar]
-                conn.update(worksheet="Hoja 1", data=df)
-                st.rerun()
+    else:
+        st.write("No hay datos para gestionar.")
 
-# --- SECCIÓN DE COBROS (HOY Y MAÑANA) ---
-st.write("---")
-hoy_dt = datetime.now()
-dia_hoy = hoy_dt.day
-dia_manana = (hoy_dt + timedelta(days=1)).day
+# --- NUEVA SECCIÓN: RECORDATORIO DE PAGOS PARA HOY ---
+hoy = datetime.now().day
+# Asegurarse de que 'Dia' sea numérico para comparar
 df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
+clientes_hoy = df[df['Dia'] == hoy]
 
-col1, col2 = st.columns(2)
+if not clientes_hoy.empty:
+    st.markdown("### 🔔 Cobros para hoy")
+    for _, row in clientes_hoy.iterrows():
+        st.markdown(f"""
+            <div class="pago-alerta">
+                <strong>{row['Nombre']}</strong> debe pagar hoy <strong>${row['Total a Pagar']}</strong><br>
+                <small>Servicios: {row['Plataformas']}</small>
+            </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info(f"Hoy es día {hoy}. No hay cobros programados para esta fecha.")
 
-with col1:
-    st.subheader("Pagos Hoy")
-    # Solo muestra los de HOY que NO han pagado
-    clientes_hoy = df[(df['Dia'] == dia_hoy) & (df['Pagado'] == "NO")]
-    if not clientes_hoy.empty:
-        for i, row in clientes_hoy.iterrows():
-            st.markdown(f'<div class="alerta-pago hoy"><strong>{row["Nombre"]}</strong><br>${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
-            if st.button(f"Confirmar Pago de {row['Nombre']}", key=f"pay_{i}"):
-                df.at[i, "Pagado"] = "SÍ"
-                conn.update(worksheet="Hoja 1", data=df)
-                st.rerun()
-    else:
-        st.success("¡Todo cobrado hoy!")
-
-with col2:
-    st.subheader("Pagos Mañana")
-    clientes_manana = df[df['Dia'] == dia_manana]
-    if not clientes_manana.empty:
-        for _, row in clientes_manana.iterrows():
-            st.markdown(f'<div class="alerta-pago manana"><strong>{row["Nombre"]}</strong><br>${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
-    else:
-        st.write("Sin cobros para mañana")
-
-# --- LISTA COMPLETA ---
+# --- LISTA Y VISUALIZACIÓN ---
 st.write("---")
 if not df.empty:
-    st.write("### Lista de Clientes")
-    # Mostramos la lista con el estado de pago
-    st.dataframe(df[["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"]], use_container_width=True, hide_index=True)
+    st.write("### Lista de Clientes Activos")
+    st.dataframe(df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]], use_container_width=True, hide_index=True)
     
     total_m = pd.to_numeric(df["Total a Pagar"]).sum()
-    st.metric(label="Recaudación Mensual", value=f"${total_m:,.0f}")
+    st.metric(label="Recaudación Mensual Esperada", value=f"${total_m:,.0f}")
