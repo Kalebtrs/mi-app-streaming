@@ -5,10 +5,9 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configuracion de pagina
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Avanzado para alineación y botón "Ultra Llamativo"
+# 2. CSS FORZADO FINAL: Boton a la derecha y Flecha con Posicionamiento Absoluto
 st.markdown("""
     <style>
-    /* Titulo con degradado */
     .main-title {
         font-size: 2.2rem !important;
         font-weight: 800;
@@ -19,56 +18,67 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* ALINEAR ELEMENTOS A LA DERECHA */
-    /* Alinea el botón Guardar Registro a la derecha */
-    div.stButton > button:first-child {
-        float: right;
-        margin-top: 10px;
+    /* --- MOVER BOTON DE GUARDAR A LA DERECHA (Flexbox Forzado) --- */
+    .stForm > div:last-child {
+        display: flex !important;
+        justify-content: flex-end !important;
+        width: 100% !important;
+        padding-top: 10px;
     }
 
-    /* Alinea el selector de Día de Corte a la derecha */
-    div[data-baseweb="select"] {
-        justify-content: flex-end;
-    }
-
-    /* BOTON ULTRA LLAMATIVO */
+    /* ESTILO DEL BOTON (Compacto y Llamativo) */
     div.stButton > button:first-child {
-        background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0);
-        background-size: 200% auto;
+        background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0) !important;
+        background-size: 200% auto !important;
         color: white !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 0.8rem !important;
-        font-size: 1.1rem !important;
+        padding: 0.6rem 2.5rem !important; /* Mas padding lateral */
+        font-size: 1rem !important;
         font-weight: bold !important;
-        /*width: 100%; <- Eliminamos esto para que no ocupe todo el ancho */
-        box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
-        transition: 0.5s;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4) !important;
+        transition: 0.5s !important;
+        text-transform: uppercase !important;
+        width: auto !important; /* Importante: No ancho completo */
     }
 
-    /* Efecto al pasar el mouse (Hover) */
     div.stButton > button:first-child:hover {
-        background-position: right center;
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(255, 0, 128, 0.6);
-        color: white !important;
+        background-position: right center !important;
+        transform: scale(1.05) !important;
     }
 
-    /* Boton de eliminar mas sobrio pero claro */
+    /* --- FORZAR FLECHITA DEL SELECTBOX A LA DERECHA (Tecnica Absoluta) --- */
+    /* 1. Preparamos el contenedor del selector */
+    div[data-baseweb="select"] {
+        position: relative !important;
+    }
+
+    /* 2. Tomamos el icono de la flecha y lo movemos de forma absoluta */
+    div[data-baseweb="select"] [data-testid="stMarkdownContainer"] + div {
+        position: absolute !important;
+        right: 10px !important; /* Fijado a 10px de la derecha */
+        top: 50% !important;
+        transform: translateY(-50%) !important; /* Centrado vertical */
+        pointer-events: none !important; /* Para que el click pase a traves hacia el selector */
+    }
+
+    /* 3. Alineamos el texto a la derecha también para consistencia */
+    div[data-baseweb="select"] .stMarkdownContainer p {
+        text-align: right !important;
+        margin-right: 30px !important; /* Espacio para que el texto no pise la flecha */
+    }
+
+    /* Boton de eliminar (Mantenemos estilo) */
     div.stButton > button[kind="primary"] {
         background: #FF4B2B !important;
         border-radius: 8px !important;
-        text-transform: none;
-        letter-spacing: 0;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. Datos y Conexion
+# 3. Datos y Conexion (Mantenemos logica)
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -87,10 +97,12 @@ with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()), placeholder="Selecciona el servicio")
+        
         dias = [str(i) for i in range(1, 32)]
+        # El selector ahora se vera forzado con texto y flecha a la derecha
         dia = st.selectbox("Día de Corte", options=dias, index=None, placeholder="Selecciona dia de corte")
         
-        # El botón de guardar ahora se alineará a la derecha gracias al CSS
+        # El contenedor del formulario empujara este boton a la derecha
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
                 total = sum(PRECIOS.get(s, 0) for s in servicios)
