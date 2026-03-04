@@ -4,237 +4,151 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import urllib.parse
 
-# Configuración de página con icono de calendario
-st.set_page_config(page_title="Gestor de Pagos", page_icon="📅")
+# Configuración para que se vea como una App móvil
+st.set_page_config(page_title="Streaming App", page_icon="📱", layout="centered")
 
-# --- ESTILOS CSS PERSONALIZADOS (Inspirado en image_8.png) ---
+# --- DISEÑO TIPO SMART HOME (CSS AVANZADO) ---
 st.markdown("""
 <style>
-    /* Estilo para el contenedor principal */
-    {
-        background-color: #F0F2F6;
+    /* Fondo oscuro como la imagen */
+    .stApp {
+        background-color: #0E1117;
     }
     
-    /* Títulos grandes y limpios (como "DEVICES") */
-    {
-        color: #004DFF;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 25px;
+    /* Título estilo neón */
+    .main-title {
+        color: #FFFFFF;
+        font-size: 28px;
+        font-weight: 800;
+        text-align: left;
+        margin-bottom: 5px;
+        font-family: 'sans-serif';
     }
     
-    /* Subtítulos centrados */
-    {
-        color: #2D3A5D;
-        text-align: center;
-        font-weight: 600;
-        margin-top: 20px;
+    .sub-title {
+        color: #808495;
+        font-size: 14px;
+        margin-bottom: 20px;
     }
 
-    /* Contenedor de las tarjetas de plataformas (para centrar) */
-    {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 15px;
-        margin-bottom: 30px;
-    }
-
-    /* Estilo para cada tarjeta de plataforma */
-    {
-        background-color: #FFFFFF;
-        border: 2px solid #D0D9FF;
-        border-radius: 12px;
-        padding: 15px;
-        width: 140px;
-        text-align: center;
-        box-shadow: 0px 4px 10px rgba(0, 77, 255, 0.05);
-        cursor: pointer;
-        transition: transform 0.2s, border-color 0.2s;
-    }
-    
-    /* Efecto de hover al pasar el ratón por encima */
-    {
-        transform: translateY(-5px);
-        border-color: #004DFF;
-    }
-
-    /* Nombre de la plataforma dentro de la tarjeta */
-    {
-        font-weight: 700;
-        color: #2D3A5D;
-        font-size: 1.1em;
-        margin-bottom: 8px;
-    }
-
-    /* Precio dentro de la tarjeta */
-    {
-        font-weight: 600;
-        color: #004DFF;
-        font-size: 1.3em;
-    }
-    
-    /* Estilo para la lista de clientes (cajas grandes para cada cliente) */
-    {
-        background-color: #FFFFFF;
-        border-radius: 12px;
+    /* Tarjetas de Clientes (Estilo Smart Home) */
+    .card {
+        background: #1E232E;
+        border-radius: 20px;
         padding: 20px;
         margin-bottom: 15px;
-        border-left: 5px solid #004DFF;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.03);
+        border: 1px solid #2D343F;
     }
     
-    /* Estilo para las alertas de pago (al estilo de los errores de image_2.png) */
-    {
-        background-color: #FFEFF0;
-        border: 2px solid #FF5252;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 20px;
-        text-align: center;
-        color: #FF5252;
+    .card-title {
+        color: #FFFFFF;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    .card-price {
+        color: #3D5AFE;
+        font-size: 22px;
         font-weight: 700;
     }
 
+    /* Badge de estado (Activo/Hoy) */
+    .badge-today {
+        background-color: #FF4B4B;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    /* Inputs estilo oscuro */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        background-color: #1E232E !important;
+        color: white !important;
+        border-radius: 10px !important;
+        border: 1px solid #2D343F !important;
+    }
 </style>
 """, unsafe_allow_submit=True)
 
-# --- CONFIGURACIÓN DE DATOS ---
-PRECIOS = {
-    "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
-    "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
-}
+# --- ENCABEZADO ---
+st.markdown('<div class="main-title">Streaming Manager</div>', unsafe_allow_submit=True)
+st.markdown('<div class="sub-title">Control de pagos y dispositivos</div>', unsafe_allow_submit=True)
 
-# --- TÍTULO PRINCIPAL (Como el de image_8.png) ---
-st.markdown("<h1>GESTOR DE PAGOS</h1>", unsafe_allow_submit=True)
-
-# --- CONEXIÓN A GOOGLE SHEETS ---
+# --- CONEXIÓN ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
     df_existente = conn.read(ttl=0)
     df_existente = df_existente.dropna(how="all")
 except Exception:
-    df_existente = pd.DataFrame(columns=["Nombre", "Telefono", "Plataformas", "Total", "Dia"])
+    df_existente = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# --- SECCIÓN DE REGISTRO ---
-st.markdown("<h3>Nuevo Cliente</h3>", unsafe_allow_submit=True)
-
-# Contenedor principal de la interfaz
-with st.form("nuevo_cliente", clear_on_submit=True):
-    # Campos de texto (Inspirado en los de image_8.png)
-    nombre = st.text_input("Nombre Completo")
-    telefono = st.text_input("Número de WhatsApp (con código de país, ej: +52...)", help="Para enviar mensajes de cobro automático.")
-
-    # Título para la selección de plataformas
-    st.markdown("<h3>Servicios</h3>", unsafe_allow_submit=True)
-
-    # Contenedor de las "tarjetas" de plataformas
-    platforms_html = ""
-    plataformas_elegidas = []
+# --- REGISTRO (DENTRO DE UNA TARJETA) ---
+with st.container():
+    st.markdown('<div class="card">', unsafe_allow_submit=True)
+    st.markdown('<span style="color:white; font-weight:bold;">Añadir Nuevo</span>', unsafe_allow_submit=True)
     
-    # Creamos las tarjetas
-    cols = st.columns(3)
-    p_keys = list(PRECIOS.keys())
-    for i, p in enumerate(p_keys):
-        col = cols
-        with col:
-            # Creamos un checkbox con estilo CSS de tarjeta
-            checked = st.checkbox(p, key=f"ch_{p}")
-            if checked:
-                plataformas_elegidas.append(p)
+    with st.form("nuevo_cliente", clear_on_submit=True):
+        nombre = st.text_input("Nombre del titular")
+        
+        # Selección de servicios en columnas
+        servicios = ["Netflix", "Disney", "HBO", "Prime", "Vix", "Combo"]
+        elegidos = st.multiselect("Selecciona Dispositivos/Servicios", servicios)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            dia = st.number_input("Día cobro", 1, 31, datetime.now().day)
+        with col2:
+            monto = st.number_input("Monto $", 0, 500, 70)
             
-            # HTML para la visualización de la tarjeta (imitando image_8.png)
-            platforms_html = f"""
-            <div class="platform-card" style="border-color: {'#004DFF' if checked else '#D0D9FF'};">
-                <div class="platform-name">{p.upper()}</div>
-                <div class="platform-price">${PRECIOS}</div>
-            </div>
-            """
-            st.markdown(platforms_html, unsafe_allow_submit=True)
-
-    st.markdown("<br>", unsafe_allow_submit=True)
-    
-    # Resto de los campos de registro
-    dia_pago = st.number_input("Día de corte (1-31)", min_value=1, max_value=31, value=datetime.now().day, help="Día en que vence el pago de este cliente.")
-    boton_guardar = st.form_submit_button("AÑADIR CLIENTE", type="primary")
-
-    if boton_guardar:
-        if nombre and telefono and plataformas_elegidas:
-            # Aseguramos el formato correcto del teléfono
-            if not telefono.startswith('+'):
-                telefono = '+' + telefono
-
-            total = sum(PRECIOS for p in plataformas_elegidas)
-            nueva_fila = pd.DataFrame([{
-                "Nombre": nombre.upper(),
-                "Telefono": telefono,
-                "Plataformas": ", ".join(plataformas_elegidas),
-                "Total": total,
-                "Dia": int(dia_pago)
-            }])
-            
-            df_final = pd.concat(, ignore_index=True)
+        submit = st.form_submit_button("REGISTRAR DISPOSITIVO")
+        
+        if submit and nombre:
+            nueva_fila = pd.DataFrame([{"Nombre": nombre.upper(), "Plataformas": ", ".join(elegidos), "Total": monto, "Dia": int(dia)}])
+            df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
             conn.update(data=df_final)
-            st.success(f"¡Cliente **{nombre.upper()}** añadido correctamente!")
+            st.success("Registrado")
             st.rerun()
+    st.markdown('</div>', unsafe_allow_submit=True)
 
-# --- ALERTAS DEL DÍA ---
+# --- ALERTAS DE HOY (ESTILO NOTIFICACIÓN) ---
 hoy = datetime.now().day
-st.markdown(f"<h2>Alertas de hoy (Día {hoy})</h2>", unsafe_allow_submit=True)
-
-if not df_existente.empty and 'Dia' in df_existente.columns:
+if not df_existente.empty:
     df_existente['Dia'] = pd.to_numeric(df_existente['Dia'], errors='coerce')
-    deudores = df_existente == hoy]
+    deudores = df_existente[df_existente['Dia'] == hoy]
     
     if not deudores.empty:
+        st.markdown('<h3>Pagos Pendientes Hoy</h3>', unsafe_allow_submit=True)
         for _, fila in deudores.iterrows():
-            # Mensaje de WhatsApp
-            nombre_c = fila['Nombre']
-            plataformas_c = fila['Plataformas']
-            total_c = fila['Total']
-            telefono_c = fila['Telefono']
-
-            mensaje = f"Hola *{nombre_c}* 👋, recordatorio de tu pago de hoy del servicio *{plataformas_c}* por un total de *${total_c}*. Gracias."
-            mensaje_urled = urllib.parse.quote(mensaje)
-            link_whatsapp = f"https://wa.me/{telefono_c}?text={mensaje_urled}"
-            
-            # HTML para la alerta
             st.markdown(f"""
-            <div class="payment-alert">
-                PAGO DE HOY: <b>{nombre_c}</b> (${total_c})<br>
-                <a href="{link_whatsapp}" target="_blank" style="color: #FF5252; text-decoration: underline;">Enviar mensaje de cobro</a>
+            <div style="background: linear-gradient(90deg, #FF4B4B 0%, #1E232E 100%); padding:15px; border-radius:15px; margin-bottom:10px; border-left: 5px solid white;">
+                <b style="color:white;">🔔 {fila['Nombre']}</b><br>
+                <small style="color:white;">Cobrar ${fila['Total']} por {fila['Plataformas']}</small>
             </div>
             """, unsafe_allow_submit=True)
-    else:
-        st.info("Sin pagos para hoy")
 
-# --- LISTA COMPLETA DE CLIENTES ---
+# --- LISTA DE DISPOSITIVOS (CLIENTES) ---
+st.markdown('<br><h3>Dispositivos Conectados</h3>', unsafe_allow_submit=True)
+
 if not df_existente.empty:
-    st.divider()
-    st.markdown("<h2>Clientes Registrados</h2>", unsafe_allow_submit=True)
-    
+    # Mostramos los clientes en un diseño de cuadrícula (2 por fila)
     for i, fila in df_existente.iterrows():
-        # Uso de .get() para mayor seguridad
-        nombre_c = fila.get('Nombre', 'S/N').upper()
-        dia_c = fila.get('Dia', '0')
-        plataformas_c = fila.get('Plataformas', 'N/A')
-        total_c = fila.get('Total', 0)
-        
-        # HTML para la caja del cliente
+        # Cada cliente es una "Tarjeta de Dispositivo"
         st.markdown(f"""
-        <div class="client-box">
-            <b>{nombre_c}</b><br>
-            Día de corte: {dia_c}<br>
-            Servicios: {plataformas_c}<br>
-            Total: <b>${total_c}</b>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between;">
+                <span class="card-title">👤 {fila['Nombre']}</span>
+                <span class="badge-today">Día {int(fila['Dia'])}</span>
+            </div>
+            <div style="color: #808495; font-size: 13px; margin: 10px 0;">{fila['Plataformas']}</div>
+            <div class="card-price">${fila['Total']}</div>
         </div>
         """, unsafe_allow_submit=True)
         
-        # Botón para eliminar cliente
-        with st.expander("Opciones de Cliente"):
-            if st.button("Eliminar Cliente", key=f"del_{i}"):
-                df_final = df_existente.drop(i)
-                conn.update(data=df_final)
-                st.success(f"¡Cliente **{nombre_c}** eliminado!")
-                st.rerun()
+        # Botón pequeño para eliminar
+        if st.button(f"Desconectar {fila['Nombre']}", key=f"btn_{i}"):
+            df_final = df_existente.drop(i)
+            conn.update(data=df_final)
+            st.rerun()
