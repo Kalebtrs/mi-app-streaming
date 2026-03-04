@@ -5,48 +5,72 @@ from streamlit_gsheets import GSheetsConnection
 # Configuración visual
 st.set_page_config(page_title="Gestor Streaming", page_icon="🎬")
 
-st.markdown("<h1 style='text-align: center; color: #6221E5;'>🎬 Registro de Clientes</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #6221E5;'>🎬 Control de Clientes y Cobros</h1>", unsafe_allow_html=True)
 
-# 1. Conexión a Google Sheets
+# 1. Diccionario de Precios (Basado en tu imagen)
+PRECIOS = {
+    "Prime video": 50,
+    "HBO": 70,
+    "Netflix": 70,
+    "Disney": 50,
+    "Vix": 30,
+    "Combo 1": 85,
+    "Combo 2": 100,
+    "Combo 3": 110,
+    "Combo 4": 115
+}
+
+# 2. Conexión a Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 2. Leer datos actuales (Hoja 1 debe ser el nombre exacto de la pestaña)
+# 3. Leer datos actuales
 try:
     df = conn.read(worksheet="Hoja 1", ttl=0)
-    # Limpiar filas vacías si existen
     df = df.dropna(how="all")
-except Exception as e:
-    st.error(f"Error al leer la hoja: {e}")
-    df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia"])
+except Exception:
+    df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
-# 3. Formulario para añadir clientes
-with st.form("nuevo_cliente"):
-    nombre = st.text_input("Nombre del Cliente")
-    plataformas = st.multiselect("Plataformas", ["Netflix", "Disney+", "HBO Max", "Prime Video", "Vix Premium"])
-    dia = st.number_input("Día de Pago", 1, 31, 1)
+# 4. Formulario de Registro
+with st.expander("➕ Registrar Nuevo Cliente", expanded=True):
+    with st.form("nuevo_cliente"):
+        nombre = st.text_input("Nombre del Cliente")
+        
+        # Selección de plataformas usando las llaves del diccionario
+        seleccionadas = st.multiselect("Selecciona las Plataformas / Combos", list(PRECIOS.keys()))
+        
+        dia = st.number_input("Día de Corte", 1, 31, 1)
+        
+        # Calcular el total automáticamente
+        total_pago = sum(PRECIOS[p] for p in seleccionadas)
+        st.info(f"💰 Total calculado: ${total_pago}")
+        
+        if st.form_submit_button("Guardar en la Base de Datos"):
+            if nombre and seleccionadas:
+                nueva_fila = pd.DataFrame({
+                    "Nombre": [nombre.upper()],
+                    "Plataformas": [", ".join(seleccionadas)],
+                    "Dia": [int(dia)],
+                    "Total a Pagar": [total_pago]
+                })
+                
+                df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
+                
+                try:
+                    conn.update(worksheet="Hoja 1", data=df_actualizado)
+                    st.success(f"✅ ¡{nombre} registrado! Total: ${total_pago}")
+                    st.rerun()
+                except Exception as e:
+                    st.error("Error al guardar. Verifica los permisos de Editor en el Google Sheet.")
+            else:
+                st.warning("Completa el nombre y elige al menos una opción.")
+
+# 5. Mostrar Lista de Clientes
+st.write("### 📋 Clientes Actuales")
+if not df.empty:
+    # Mostramos la tabla y añadimos una fila de resumen al final si deseas
+    st.dataframe(df, use_container_width=True, hide_index=True)
     
-    if st.form_submit_button("Guardar"):
-        if nombre and plataformas:
-            # Crear nueva fila
-            nueva_fila = pd.DataFrame({
-                "Nombre": [nombre.upper()],
-                "Plataformas": [", ".join(plataformas)],
-                "Dia": [int(dia)]
-            })
-            
-            # Unir con datos viejos
-            df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
-            
-            # Subir a Google Sheets
-            try:
-                conn.update(worksheet="Hoja 1", data=df_actualizado)
-                st.success(f"✅ ¡{nombre} guardado con éxito!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error al guardar: {e}. ¿Diste permisos de EDITOR al correo de la cuenta de servicio?")
-        else:
-            st.warning("Por favor completa el nombre y elige al menos una plataforma.")
-
-# 4. Mostrar tabla
-st.write("### 📋 Lista Actual")
-st.dataframe(df, use_container_width=True, hide_index=True)
+    total_mensual = df["Total a Pagar"].sum()
+    st.metric("Ganancia Mensual Estimada", f"${total_mensual}")
+else:
+    st.info("No hay clientes registrados todavía.")
