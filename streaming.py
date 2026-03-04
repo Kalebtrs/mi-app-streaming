@@ -3,130 +3,165 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración de página
-st.set_page_config(page_title="Smart Streaming", page_icon="⚡", layout="centered")
+# Configuración de página
+st.set_page_config(page_title="Streaming Pay", page_icon="💜", layout="centered")
 
-# 2. INYECCIÓN DE ESTILO SMART HOME (Inspirado en image_f349e3)
+# --- CSS ESTILO FINTECH (MORADO Y CIRCULAR) ---
 st.markdown("""
     <style>
-    /* Fondo principal azul vibrante */
+    /* Fondo gris muy claro de app móvil */
     .stApp {
-        background: linear-gradient(180deg, #4D76FD 0%, #3B59F5 100%);
+        background-color: #F7F7F9;
     }
 
-    /* Ocultar elementos de Streamlit */
-    #MainMenu, footer, header {visibility: hidden;}
-
-    /* Contenedor tipo Tarjeta Blanca (Como en image_f349e3) */
-    .main-card {
-        background-color: white;
-        border-radius: 30px;
-        padding: 30px;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.1);
-        margin-top: -50px;
-    }
-
-    /* Títulos estilo Dispositivos */
-    .smart-title {
+    /* Encabezado Morado Superior */
+    .header-purple {
+        background-color: #6221E5;
+        padding: 40px 20px;
+        margin: -60px -20px 20px -20px;
         color: white;
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 800;
-        font-size: 32px;
-        text-align: center;
-        padding: 40px 0px;
-        letter-spacing: 2px;
+        border-radius: 0 0 30px 30px;
     }
 
-    /* Botones estilo Smart App */
-    .stButton>button {
-        background-color: #4D76FD !important;
-        color: white !important;
-        border-radius: 15px !important;
+    /* Tarjetas blancas redondeadas */
+    .stForm, .main-card {
+        background-color: white !important;
+        border-radius: 25px !important;
         border: none !important;
-        width: 100%;
-        font-weight: bold;
-        height: 50px;
-        transition: 0.3s;
+        padding: 20px !important;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.05) !important;
+    }
+
+    /* Títulos de sección */
+    .section-title {
+        color: #1A1A1A;
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    /* Estilo de los iconos circulares (Simulando la imagen) */
+    .icon-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 15px;
+        padding: 10px 0;
     }
     
-    .stButton>button:hover {
-        background-color: #2D4ED3 !important;
-        transform: scale(1.02);
+    .icon-item {
+        text-align: center;
+        width: 80px;
     }
 
-    /* Estilo para los inputs */
-    .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border-radius: 12px !important;
-        border: 1px solid #E0E7FF !important;
-        background-color: #F8FAFF !important;
+    .circle-icon {
+        width: 60px;
+        height: 60px;
+        background-color: #F0E9FF;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px auto;
+        color: #6221E5;
+        font-size: 24px;
+        transition: 0.3s;
+        border: 2px solid transparent;
     }
 
-    /* Tarjetas de Clientes (Grid estilo image_f349e3) */
-    .client-item {
-        background-color: #F0F4FF;
-        border-radius: 20px;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-left: 6px solid #4D76FD;
+    /* Botón morado principal */
+    .stButton>button {
+        background-color: #6221E5 !important;
+        color: white !important;
+        border-radius: 50px !important;
+        height: 50px;
+        font-weight: bold;
+        border: none !important;
     }
+
+    /* Ocultar elementos feos */
+    #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- ENCABEZADO ESTILO SMART ---
-st.markdown('<div class="smart-title">DEVICES</div>', unsafe_allow_html=True)
+# --- HEADER APP ---
+st.markdown("""
+    <div class="header-purple">
+        <h2 style="margin:0;">¡Qué gusto verte!</h2>
+        <p style="opacity:0.8; margin:0;">Gestor de Streaming</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# --- LÓGICA DE CONEXIÓN ---
+# --- LÓGICA DE DATOS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 try:
     df = conn.read(ttl=0).dropna(how="all")
 except:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# --- CUERPO DE LA APP (TARJETA BLANCA) ---
-st.markdown('<div class="main-card">', unsafe_allow_html=True)
+# --- SECCIÓN "HOY QUIERO..." ---
+st.markdown('<p class="section-title">Hoy quiero...</p>', unsafe_allow_html=True)
 
-# Registro
-st.subheader("Add New Device")
-with st.form("registro", clear_on_submit=True):
-    nombre = st.text_input("NAME")
-    servicios = st.multiselect("PLATFORMS", ["Netflix", "Disney", "HBO", "Prime", "Vix"])
-    col1, col2 = st.columns(2)
-    with col1:
-        dia = st.number_input("BILLING DAY", 1, 31, 4)
-    with col2:
-        monto = st.number_input("PRICE $", 0, 1000, 70)
+# Usamos columnas para la selección visual
+servicios_disponibles = {
+    "Netflix": "🎬", "Disney": "🏰", "HBO": "🐉", 
+    "Prime": "📦", "Vix": "⚽", "Combo": "🌟"
+}
+
+with st.expander("Seleccionar Servicios (Toca aquí)", expanded=True):
+    plataformas_seleccionadas = []
+    cols = st.columns(3)
+    for i, (name, icon) in enumerate(servicios_disponibles.items()):
+        if cols[i % 3].checkbox(f"{icon} {name}"):
+            plataformas_seleccionadas.append(name)
+
+# --- FORMULARIO DE REGISTRO ---
+with st.form("registro"):
+    nombre = st.text_input("Nombre del cliente", placeholder="Ej. Yolanda")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        dia = st.number_input("Día de pago", 1, 31, 4)
+    with col_b:
+        precio = st.number_input("Monto $", 0, 2000, 70)
     
-    if st.form_submit_button("CONNECT DEVICE"):
-        if nombre:
-            new_data = pd.DataFrame([{"Nombre": nombre.upper(), "Plataformas": ", ".join(servicios), "Total": monto, "Dia": int(dia)}])
-            df = pd.concat([df, new_data], ignore_index=True)
+    if st.form_submit_button("Depositar a mi cuenta (Registrar)"):
+        if nombre and plataformas_seleccionadas:
+            new_row = pd.DataFrame([{
+                "Nombre": nombre.upper(), 
+                "Plataformas": ", ".join(plataformas_seleccionadas), 
+                "Total": precio, 
+                "Dia": int(dia)
+            }])
+            df = pd.concat([df, new_row], ignore_index=True)
             conn.update(data=df)
+            st.success("¡Cliente registrado!")
             st.rerun()
 
-# Alertas
+# --- MIS MOVIMIENTOS (CLIENTES) ---
+st.markdown('<p class="section-title">Mis movimientos</p>', unsafe_allow_html=True)
+
 hoy = datetime.now().day
-st.markdown(f"### Billing Today (Day {hoy})")
-deudores = df[df['Dia'].astype(int) == hoy] if not df.empty else pd.DataFrame()
-
-if not deudores.empty:
-    for _, fila in deudores.iterrows():
-        st.error(f"⚠️ PAGO PENDIENTE: {fila['Nombre']} (${fila['Total']})")
-else:
-    st.info("No devices pending today")
-
-# Lista de Clientes
-st.markdown("### Connected Devices")
 if not df.empty:
     for i, fila in df.iterrows():
+        # Color rojo si debe hoy, si no blanco
+        es_hoy = int(fila['Dia']) == hoy
+        border_color = "#FF4B4B" if es_hoy else "#EEE"
+        
         st.markdown(f"""
-        <div class="client-item">
-            <span style="color:#4D76FD; font-weight:bold;">{fila['Nombre']}</span><br>
-            <small style="color:#666;">{fila['Plataformas']} | <b>${fila['Total']}</b></small>
+        <div style="background-color: white; padding: 15px; border-radius: 20px; margin-bottom: 10px; border: 1px solid {border_color}; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <b style="color: #333;">{fila['Nombre']}</b><br>
+                <small style="color: #888;">{fila['Plataformas']} • Día {fila['Dia']}</small>
+            </div>
+            <div style="color: #6221E5; font-weight: bold; font-size: 18px;">
+                ${fila['Total']}
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("DISCONNECT", key=f"del_{i}"):
+        
+        if st.button("Eliminar", key=f"del_{i}"):
             df = df.drop(i)
             conn.update(data=df)
             st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.info("No hay movimientos registrados.")
