@@ -3,7 +3,7 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuracion de precios segun tu tabla
+# 1. Configuración de Precios
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -11,30 +11,29 @@ PRECIOS = {
 
 st.title("Gestor de Pagos Streaming")
 
-# Conexion a tu Google Sheet usando el ID: 12qBXQpDFKoke8pr6nSnFCF3vl3e7D1jNgjv7Ji5b2c4
+# 2. Conexión a Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Leer datos existentes
+# 3. Leer datos
 try:
+    # ttl=0 para que siempre lea lo más nuevo
     df_existente = conn.read(ttl=0)
-    # Limpiar filas vacias si las hay
     df_existente = df_existente.dropna(how="all")
-except:
+except Exception:
     df_existente = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# Formulario para registrar
+# 4. Formulario de Registro
 with st.form("nuevo_cliente", clear_on_submit=True):
     st.subheader("Registrar Nuevo Cliente")
     nombre = st.text_input("Nombre del Cliente")
     
-    # Menu plegable sin emojis que sube y baja
     with st.expander("Plataformas (Abrir/Cerrar)"):
         plataformas_elegidas = []
         for p in PRECIOS.keys():
             if st.checkbox(p, key=f"ch_{p}"):
                 plataformas_elegidas.append(p)
     
-    dia_pago = st.number_input("Dia de corte (1-31)", min_value=1, max_value=31, value=datetime.now().day)
+    dia_pago = st.number_input("Dia de corte", min_value=1, max_value=31, value=datetime.now().day)
     boton_guardar = st.form_submit_button("Añadir Cliente")
 
     if boton_guardar:
@@ -47,29 +46,27 @@ with st.form("nuevo_cliente", clear_on_submit=True):
                 "Dia": dia_pago
             }])
             
-            # Guardar en la nube
             df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
+            # Guardar datos
             conn.update(data=df_final)
-            st.success(f"Guardado con exito: {nombre}")
+            st.success(f"Guardado: {nombre}")
             st.rerun()
-        elif not nombre:
-            st.error("Falta el nombre")
-        else:
-            st.error("Elige una plataforma")
 
-# Seccion de Alertas
+# 5. Alertas
 hoy = datetime.now().day
 st.header(f"Alertas para hoy (Dia {hoy})")
-# Filtrar deudores del dia
-deudores = df_existente[df_existente['Dia'].astype(float) == hoy]
+if not df_existente.empty:
+    # Convertimos a numérico por si Google Sheets lo lee como texto
+    df_existente['Dia'] = pd.to_numeric(df_existente['Dia'], errors='coerce')
+    deudores = df_existente[df_existente['Dia'] == hoy]
+    
+    if not deudores.empty:
+        for _, fila in deudores.iterrows():
+            st.error(f"PAGO: {fila['Nombre']} - ${fila['Total']} [{fila['Plataformas']}]")
+    else:
+        st.info("Sin pagos para hoy")
 
-if not deudores.empty:
-    for _, fila in deudores.iterrows():
-        st.error(f"PAGO PENDIENTE: {fila['Nombre']} - ${fila['Total']} [{fila['Plataformas']}]")
-else:
-    st.info("Sin pagos para hoy")
-
-# Lista de Clientes Registrados
+# 6. Lista de Clientes
 if not df_existente.empty:
     st.divider()
     st.subheader("Clientes Registrados")
