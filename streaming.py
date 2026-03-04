@@ -6,13 +6,12 @@ import pandas as pd
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Streaming Manager", page_icon="🎬", layout="centered")
 
-# 2. DISEÑO ESTILO SPIN (Banner ajustado al ancho de paneles)
+# 2. DISEÑO ESTILO SPIN (Compacto y sin círculos)
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #F7F7F9 !important; }
     header, footer { visibility: hidden !important; }
     
-    /* Banner Morado ajustado */
     .header-spin {
         background-color: #6221E5;
         color: white;
@@ -23,10 +22,9 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(98, 33, 229, 0.2);
     }
     
-    .header-spin h1 { margin: 0; font-size: 24px; font-family: sans-serif; font-weight: bold; }
+    .header-spin h1 { margin: 0; font-size: 24px; font-weight: bold; }
     .header-spin p { margin: 5px 0 0 0; opacity: 0.9; font-size: 14px; }
 
-    /* Tarjetas de Clientes */
     .client-box {
         background-color: white;
         padding: 12px 18px;
@@ -38,7 +36,6 @@ st.markdown("""
         border: 1px solid #EEE;
     }
     
-    /* Botón Guardar */
     .stButton>button {
         background-color: #6221E5 !important;
         color: white !important;
@@ -46,11 +43,8 @@ st.markdown("""
         height: 48px !important;
         width: 100% !important;
         font-weight: bold !important;
-        border: none !important;
-        margin-top: 10px;
     }
 
-    /* Etiquetas de formulario */
     label { font-weight: bold !important; color: #333 !important; }
     </style>
     
@@ -63,7 +57,7 @@ st.markdown("""
 # 3. CONEXIÓN A GOOGLE SHEETS
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# LEER DATOS (Usando "Hoja 1")
+# Leer datos de tu archivo "Hoja 1"
 try:
     df = conn.read(worksheet="Hoja 1", ttl=0).dropna(how="all")
 except Exception:
@@ -84,26 +78,23 @@ with st.container():
         
         if st.form_submit_button("GUARDAR CLIENTE"):
             if nombre and plataformas and dia:
-                # Crear nueva fila
                 new_row = pd.DataFrame([{
                     "Nombre": nombre.upper(),
                     "Plataformas": ", ".join(plataformas),
                     "Dia": int(dia)
                 }])
                 
-                # Unir datos
                 df_actualizado = pd.concat([df, new_row], ignore_index=True)
                 
-                # GUARDAR DATOS (Usando "Hoja 1")
                 try:
+                    # Guardado directo en tu archivo Hoja 1
                     conn.update(worksheet="Hoja 1", data=df_actualizado)
-                    st.success("✅ ¡Cliente guardado en Hoja 1!")
+                    st.success("✅ ¡Cliente guardado correctamente!")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error al guardar: {e}")
-                    st.info("Asegúrate de que la pestaña en tu Excel se llame exactamente: Hoja 1")
             else:
-                st.warning("⚠️ Rellena todos los campos.")
+                st.warning("⚠️ Por favor rellena todos los campos.")
 
 # 5. LISTADO DE CLIENTES
 st.markdown("---")
@@ -135,4 +126,4 @@ if not df.empty:
             conn.update(worksheet="Hoja 1", data=df_final)
             st.rerun()
 else:
-    st.info("No hay clientes en 'Hoja 1'.")
+    st.info("No hay clientes registrados en la Hoja 1.")
