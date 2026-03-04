@@ -1,9 +1,8 @@
 import streamlit as st
-from datetime import datetime
-from st_files_connection import FilesConnection
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-
+from streamlit_gsheets import GSheetsConnection
+# Esta es la que te marcaba error:
+from st_files_connection import FilesConnection
 # Configuracion de precios
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
@@ -75,3 +74,4 @@ if not df_existente.empty:
                 df_final = df_existente.drop(i)
                 conn.update(data=df_final)
                 st.rerun()
+
