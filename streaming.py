@@ -38,7 +38,7 @@ with st.expander("Registrar Nuevo Cliente", expanded=True):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre del Cliente", placeholder="Escribe el nombre...")
         
-        # Ajuste de etiquetas solicitado
+        # Etiquetas personalizadas
         seleccionadas = st.multiselect(
             "Plataformas y Combos", 
             options=list(PRECIOS.keys()),
@@ -46,7 +46,6 @@ with st.expander("Registrar Nuevo Cliente", expanded=True):
             key="plataformas_input"
         )
         
-        # Selector de dia estilizado
         opciones_dias = [str(i) for i in range(1, 32)]
         dia_seleccionado = st.selectbox(
             "Día de Corte", 
@@ -93,17 +92,24 @@ if not df.empty:
 st.write("---")
 st.write("### Clientes Activos")
 if not df.empty:
-    # Mostramos solo las columnas necesarias, eliminando "Total" si existe
-    columnas_deseadas = ["Nombre", "Plataformas", "Dia", "Total a Pagar"]
-    df_final = df[[c for c in columnas_deseadas if c in df.columns]]
+    # 1. Definimos y filtramos el orden de las columnas que pediste
+    columnas_ordenadas = ["Nombre", "Plataformas", "Dia", "Total a Pagar"]
+    df_mostrar = df[[c for c in columnas_ordenadas if c in df.columns]].copy()
     
-    if "Total a Pagar" in df_final.columns:
-        df_final["Total a Pagar"] = pd.to_numeric(df_final["Total a Pagar"], errors='coerce').fillna(0)
+    # 2. Aseguramos que el total sea numerico para aplicar formato
+    df_mostrar["Total a Pagar"] = pd.to_numeric(df_mostrar["Total a Pagar"], errors='coerce').fillna(0)
     
-    st.dataframe(df_final, use_container_width=True, hide_index=True)
+    # 3. Mostramos la tabla con el formato de moneda ($)
+    st.dataframe(
+        df_mostrar, 
+        use_container_width=True, 
+        hide_index=True,
+        column_config={
+            "Total a Pagar": st.column_config.NumberColumn(format="$%d")
+        }
+    )
     
-    if "Total a Pagar" in df_final.columns:
-        recaudacion = df_final["Total a Pagar"].sum()
-        st.metric("Recaudacion Mensual", f"${recaudacion:,.2f}")
+    recaudacion = df_mostrar["Total a Pagar"].sum()
+    st.metric("Recaudacion Mensual", f"${recaudacion:,.2f}")
 else:
     st.write("No hay registros en este momento")
