@@ -99,7 +99,6 @@ df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
 clientes_hoy = df[df['Dia'] == hoy]
 
 if not clientes_hoy.empty:
-    st.markdown("### 🔔 Cobros para hoy")
     for _, row in clientes_hoy.iterrows():
         st.markdown(f"""
             <div class="pago-alerta">
@@ -118,3 +117,4 @@ if not df.empty:
     
     total_m = pd.to_numeric(df["Total a Pagar"]).sum()
     st.metric(label="Recaudación Mensual Esperada", value=f"${total_m:,.0f}")
+
