@@ -3,7 +3,7 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Precios actualizados
+# Precios actualizados
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -11,20 +11,17 @@ PRECIOS = {
 
 st.title("Gestor de Pagos Streaming")
 
-# 2. Conexión
+# Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 3. Leer datos con seguridad
+# Cargar datos con manejo de errores para columnas inexistentes
 try:
     df_existente = conn.read(ttl=0)
     df_existente = df_existente.dropna(how="all")
-    # Verificamos si la columna 'Dia' existe, si no, la creamos vacía
-    if 'Dia' not in df_existente.columns:
-        df_existente['Dia'] = None
 except Exception:
     df_existente = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# 4. Formulario
+# Formulario
 with st.form("nuevo_cliente", clear_on_submit=True):
     st.subheader("Registrar Nuevo Cliente")
     nombre = st.text_input("Nombre del Cliente")
@@ -49,16 +46,16 @@ with st.form("nuevo_cliente", clear_on_submit=True):
             }])
             
             df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
+            # Intentar guardar
             conn.update(data=df_final)
-            st.success(f"¡Guardado con éxito!")
+            st.success("¡Cliente guardado!")
             st.rerun()
 
-# 5. Alertas (Aquí es donde daba el error)
+# Alertas del día (Protección contra KeyError)
 hoy = datetime.now().day
 st.header(f"Alertas para hoy (Dia {hoy})")
 
 if not df_existente.empty and 'Dia' in df_existente.columns:
-    # Convertimos a número con cuidado
     df_existente['Dia'] = pd.to_numeric(df_existente['Dia'], errors='coerce')
     deudores = df_existente[df_existente['Dia'] == hoy]
     
@@ -68,13 +65,16 @@ if not df_existente.empty and 'Dia' in df_existente.columns:
     else:
         st.info("Sin pagos para hoy")
 
-# 6. Lista de Clientes
+# Lista de Clientes
 if not df_existente.empty:
     st.divider()
     st.subheader("Clientes Registrados")
     for i, fila in df_existente.iterrows():
-        with st.expander(f"{fila.get('Nombre', 'S/N')} - Dia {fila.get('Dia', '0')}"):
-            st.write(f"Servicios: {fila.get('Plataformas', 'N/A')}")
+        # Uso de .get() para evitar errores si faltan columnas
+        nombre_c = fila.get('Nombre', 'S/N')
+        dia_c = fila.get('Dia', '?')
+        with st.expander(f"{nombre_c} - Dia {dia_c}"):
+            st.write(f"Servicios: {fila.get('Plataformas', 'No especificado')}")
             st.write(f"Cobro: ${fila.get('Total', 0)}")
             if st.button("Eliminar", key=f"del_{i}"):
                 df_final = df_existente.drop(i)
