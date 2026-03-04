@@ -63,3 +63,9 @@ if st.session_state.lista_clientes:
     st.subheader("👥 Clientes Registrados")
     
     for i, c in enumerate(st.session_state.lista_clientes):
+        with st.expander(f"👤 {c['Nombre']} - {c['Plataforma']}"):
+            st.write(f"**Monto:** ${c['Total']}")
+            st.write(f"**Día de cobro:** {c['Dia']} de cada mes")
+            if st.button(f"Eliminar Cliente", key=f"del_{i}"):
+                st.session_state.lista_clientes.pop(i)
+                st.rerun()
