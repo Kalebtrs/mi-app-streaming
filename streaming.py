@@ -9,28 +9,22 @@ st.set_page_config(page_title="Streaming Manager", page_icon="🎬", layout="cen
 # 2. DISEÑO AJUSTADO AL ANCHO DE LOS PANELES
 st.markdown("""
     <style>
-    /* Fondo general */
     [data-testid="stAppViewContainer"] { background-color: #F7F7F9 !important; }
     header, footer { visibility: hidden !important; }
     
-    /* Contenedor principal para limitar el ancho de lo morado */
-    .main-container {
-        max-width: 100%;
-        margin: auto;
-    }
-
-    /* Banner Morado ajustado al tamaño de los inputs */
+    /* Banner Morado del tamaño de los paneles */
     .header-spin {
         background-color: #6221E5;
         color: white;
-        padding: 15px;
+        padding: 20px;
         margin: 10px 0px 20px 0px;
         text-align: center;
-        border-radius: 15px; /* Bordes redondeados como los paneles */
+        border-radius: 20px;
         box-shadow: 0 4px 10px rgba(98, 33, 229, 0.2);
     }
     
-    .header-spin h1 { margin: 0; font-size: 20px; font-family: sans-serif; }
+    .header-spin h1 { margin: 0; font-size: 24px; font-family: sans-serif; font-weight: bold; }
+    .header-spin p { margin: 5px 0 0 0; opacity: 0.9; font-size: 14px; }
 
     /* Tarjetas de Clientes */
     .client-box {
@@ -49,12 +43,18 @@ st.markdown("""
         background-color: #6221E5 !important;
         color: white !important;
         border-radius: 12px !important;
-        height: 45px !important;
+        height: 48px !important;
         width: 100% !important;
         font-weight: bold !important;
         border: none !important;
+        margin-top: 10px;
     }
     </style>
+    
+    <div class="header-spin">
+        <h1>¡Qué gusto verte!</h1>
+        <p>Tu Central de Streaming</p>
+    </div>
 """, unsafe_allow_html=True)
 
 # 3. CONEXIÓN A GOOGLE SHEETS
@@ -64,19 +64,17 @@ try:
 except:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia"])
 
-# 4. CUERPO DE LA APP
-st.markdown('<div class="header-spin"><h1>Gestor de Clientes</h1></div>', unsafe_allow_html=True)
-
+# 4. FORMULARIO DE REGISTRO
 with st.container():
     with st.form("registro_cliente", clear_on_submit=True):
         # Nombre
         nombre = st.text_input("NOMBRE DEL CLIENTE", placeholder="¿A quién registramos?")
         
-        # Panel de plataformas con el texto solicitado
+        # Selección de plataforma
         plataformas = st.multiselect("SELECCIONA LA PLATAFORMA", 
                                     ["Netflix", "Disney+", "HBO Max", "Vix Premium", "Prime Video", "Paramount+", "Combo Total"])
         
-        # Día de corte con el texto solicitado
+        # Día de corte
         dia = st.number_input("DIA DE CORTE", 1, 31, datetime.now().day)
         
         if st.form_submit_button("GUARDAR CLIENTE"):
@@ -90,19 +88,18 @@ with st.container():
                 conn.update(data=df_actualizado)
                 st.rerun()
 
-# 5. LISTADO
+# 5. LISTADO DE CLIENTES
 st.markdown("### Clientes Registrados")
 if not df.empty:
     hoy = datetime.now().day
     df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
     
     for i, fila in df.iterrows():
-        # Alerta visual si toca pagar hoy
+        # Color especial si toca pagar hoy
         border_color = "#6221E5" if fila['Dia'] == hoy else "#EEE"
-        bg_color = "#FFF1F1" if fila['Dia'] == hoy else "white"
         
         st.markdown(f"""
-        <div class="client-box" style="border-color: {border_color}; background-color: {bg_color};">
+        <div class="client-box" style="border-left: 5px solid {border_color};">
             <div>
                 <b style="color:#333;">{fila['Nombre']}</b><br>
                 <small style="color:#888;">{fila['Plataformas']}</small>
