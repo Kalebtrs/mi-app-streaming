@@ -1,11 +1,3 @@
-¡Entiendo! Si el diseño no ha cambiado en absoluto y sigues viendo la interfaz oscura estándar, es porque Streamlit necesita que activemos el "Modo Inyección" de forma manual para aceptar el nuevo estilo visual.
-
-Para que tu app se vea como el diseño morado y circular de la imagen que enviaste, sigue estos 3 pasos exactos:
-
-1. Actualiza el Código (Versión Forzada)
-He modificado el código para que los iconos sean lo más parecido posible a los de la imagen. Copia y reemplaza todo tu archivo:
-
-Python
 import streamlit as st
 from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
