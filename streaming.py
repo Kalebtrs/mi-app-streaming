@@ -1,54 +1,105 @@
 import streamlit as st
-from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
-st.set_page_config(page_title="Streaming Manager", page_icon="🎬", layout="centered")
+# Configuración de la página
+st.set_page_config(
+    page_title="Gestor de Streaming",
+    page_icon="🎬",
+    layout="centered"
+)
 
-# Diseño
+# Estilos personalizados para que se vea profesional
 st.markdown("""
     <style>
-    [data-testid="stAppViewContainer"] { background-color: #F7F7F9 !important; }
-    .header-spin {
-        background-color: #6221E5; color: white; padding: 20px;
-        text-align: center; border-radius: 20px; margin-bottom: 20px;
+    .main {
+        background-color: #f5f7f9;
     }
-    .stButton>button { background-color: #6221E5 !important; color: white !important; width: 100%; border-radius: 12px; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 5px;
+        height: 3em;
+        background-color: #6221E5;
+        color: white;
+    }
+    .titulo {
+        text-align: center;
+        color: #6221E5;
+        font-family: 'Arial';
+    }
     </style>
-    <div class="header-spin">
-        <h1>¡Qué gusto verte!</h1>
-        <p>Tu Central de Streaming</p>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# Conexión
+st.markdown("<h1 class='titulo'>🎬 Control de Clientes Streaming</h1>", unsafe_allow_html=True)
+st.write("---")
+
+# 1. ESTABLECER CONEXIÓN
+# Esta línea busca automáticamente los datos en la pestaña 'Secrets' de Streamlit
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Cargar datos de la "Hoja 1"
-try:
-    df = conn.read(worksheet="Hoja 1", ttl=0).dropna(how="all")
-except:
-    df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia"])
+# 2. FUNCIÓN PARA LEER DATOS
+def cargar_datos():
+    try:
+        # worksheet="Hoja 1" debe coincidir con el nombre de la pestaña abajo en tu Excel
+        return conn.read(worksheet="Hoja 1", ttl=0).dropna(how="all")
+    except Exception as e:
+        st.error(f"Error al conectar con Google Sheets: {e}")
+        return pd.DataFrame(columns=["Nombre", "Plataformas", "Dia"])
 
-# Formulario
-with st.form("registro", clear_on_submit=True):
-    nombre = st.text_input("NOMBRE DEL CLIENTE")
-    plataformas = st.multiselect("SELECCIONA LA PLATAFORMA", ["Netflix", "Disney+", "HBO Max", "Vix Premium", "Prime Video", "Paramount+", "Combo Total"], placeholder="Selecciona la plataforma")
-    dia = st.number_input("DIA DE CORTE", 1, 31, value=None, placeholder="Día de corte")
-    
-    if st.form_submit_button("GUARDAR CLIENTE"):
-        if nombre and plataformas and dia:
-            nueva_fila = pd.DataFrame([{"Nombre": nombre.upper(), "Plataformas": ", ".join(plataformas), "Dia": int(dia)}])
-            df_final = pd.concat([df, nueva_fila], ignore_index=True)
-            conn.update(worksheet="Hoja 1", data=df_final)
-            st.success("¡Guardado!")
-            st.rerun()
+df = cargar_datos()
 
-# Lista
-st.markdown("### Clientes Registrados")
-for i, fila in df.iterrows():
-    st.write(f"👤 **{fila['Nombre']}** - {fila['Plataformas']} (Día {int(fila['Dia'])})")
-    if st.button("Eliminar", key=f"del_{i}"):
-        df_borrar = df.drop(i)
-        conn.update(worksheet="Hoja 1", data=df_borrar)
-        st.rerun()
+# 3. FORMULARIO DE REGISTRO
+with st.expander("➕ Registrar Nuevo Cliente", expanded=True):
+    with st.form("formulario_registro", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nombre = st.text_input("Nombre del Cliente")
+            dia_corte = st.number_input("Día de Corte", min_value=1, max_value=31, step=1)
+            
+        with col2:
+            opciones_tv = ["Netflix", "Disney+", "HBO Max", "Vix Premium", "Prime Video", "Paramount+", "Combo Total"]
+            plataformas = st.multiselect("Plataformas", opciones_tv)
+            
+        submit = st.form_submit_button("Guardar en la Base de Datos")
+
+        if submit:
+            if nombre and plataformas and dia_corte:
+                # Crear nueva fila
+                nueva_fila = pd.DataFrame([{
+                    "Nombre": nombre.upper(),
+                    "Plataformas": ", ".join(plataformas),
+                    "Dia": int(dia_corte)
+                }])
+                
+                # Unir con datos existentes
+                df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
+                
+                # Subir a Google Sheets
+                conn.update(worksheet="Hoja 1", data=df_actualizado)
+                
+                st.success(f"✅ Cliente {nombre} guardado correctamente.")
+                st.rerun() # Recargar la app para mostrar los cambios
+            else:
+                st.warning("Por favor, rellena todos los campos.")
+
+# 4. VISUALIZACIÓN Y ELIMINACIÓN
+st.markdown("### 📋 Lista de Clientes")
+
+if not df.empty:
+    # Mostramos los datos de forma limpia
+    for i, fila in df.iterrows():
+        with st.container():
+            c1, c2, c3 = st.columns([3, 4, 1])
+            c1.write(f"**{fila['Nombre']}**")
+            c2.write(f"📺 {fila['Plataformas']} (Corte: día {int(fila['Dia'])})")
+            
+            # Botón de eliminar para cada registro
+            if c3.button("🗑️", key=f"btn_{i}"):
+                df_nuevo = df.drop(i)
+                conn.update(worksheet="Hoja 1", data=df_nuevo)
+                st.info("Registro eliminado.")
+                st.rerun()
+            st.divider()
+else:
+    st.info("No hay clientes registrados todavía.")
