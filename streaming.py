@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # 1. Configuración de página
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS: Diseño, espacios y colores de alerta
+# 2. CSS: Diseño y el espacio que pediste
 st.markdown("""
     <style>
     .main-title {
@@ -20,31 +20,33 @@ st.markdown("""
     }
     div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
     
-    /* Espacio solicitado entre Día de Corte y Botón */
-    .stForm > div:last-child { padding-top: 60px !important; }
-
-    /* Estilo para las alertas de pago */
-    .alerta-pago {
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        border-left: 6px solid;
+    /* ESPACIO ENTRE DÍA DE CORTE Y BOTÓN */
+    .stForm > div:last-child {
+        padding-top: 60px !important; 
     }
-    .hoy { background-color: rgba(255, 75, 75, 0.15); border-color: #ff4b4b; color: #ff4b4b; }
-    .manana { background-color: rgba(255, 215, 0, 0.15); border-color: #ffd700; color: #e6c300; }
-    
+
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0) !important;
         color: white !important;
         border-radius: 12px !important;
         font-weight: bold !important;
+        width: auto !important;
+    }
+    
+    /* Estilo para los recordatorios de pago */
+    .pago-alerta {
+        background-color: rgba(255, 75, 75, 0.1);
+        border-left: 5px solid #ff4b4b;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. Conexión y Datos
+# 3. Datos y Conexión
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -87,44 +89,32 @@ with st.expander("Gestionar"):
             df_new = df[df["Nombre"] != borrar]
             conn.update(worksheet="Hoja 1", data=df_new)
             st.rerun()
+    else:
+        st.write("No hay datos para gestionar.")
 
-# --- SECCIÓN DE COBROS (HOY Y MAÑANA) ---
+# --- NUEVA SECCIÓN: RECORDATORIO DE PAGOS PARA HOY ---
+hoy = datetime.now().day
+# Asegurarse de que 'Dia' sea numérico para comparar
+df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
+clientes_hoy = df[df['Dia'] == hoy]
+
+if not clientes_hoy.empty:
+    st.markdown("### 🔔 Cobros para hoy")
+    for _, row in clientes_hoy.iterrows():
+        st.markdown(f"""
+            <div class="pago-alerta">
+                <strong>{row['Nombre']}</strong> debe pagar hoy <strong>${row['Total a Pagar']}</strong><br>
+                <small>Servicios: {row['Plataformas']}</small>
+            </div>
+        """, unsafe_allow_html=True)
+else:
+    st.info(f"Hoy es día {hoy}. No hay cobros programados para esta fecha.")
+
+# --- LISTA Y VISUALIZACIÓN ---
 st.write("---")
 if not df.empty:
-    df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
-    
-    # Cálculos de fechas
-    hoy_dt = datetime.now()
-    dia_hoy = hoy_dt.day
-    dia_manana = (hoy_dt + timedelta(days=1)).day
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("Pagos Hoy")
-        hoy_pago = df[df['Dia'] == dia_hoy]
-        if not hoy_pago.empty:
-            for _, r in hoy_pago.iterrows():
-                st.markdown(f'<div class="alerta-pago hoy"><strong>{r["Nombre"]}</strong><br>${r["Total a Pagar"]}</div>', unsafe_allow_html=True)
-        else:
-            st.write("Ninguno")
-
-    with col2:
-        st.subheader("Pagos Mañana")
-        manana_pago = df[df['Dia'] == dia_manana]
-        if not manana_pago.empty:
-            for _, r in manana_pago.iterrows():
-                st.markdown(f'<div class="alerta-pago manana"><strong>{r["Nombre"]}</strong><br>${r["Total a Pagar"]}</div>', unsafe_allow_html=True)
-        else:
-            st.write("Ninguno")
-
-# --- LISTA COMPLETA ---
-st.write("---")
-if not df.empty:
-    st.write("### Lista de Clientes")
+    st.write("### Lista de Clientes Activos")
     st.dataframe(df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]], use_container_width=True, hide_index=True)
     
     total_m = pd.to_numeric(df["Total a Pagar"]).sum()
-    st.metric(label="Recaudación Mensual", value=f"${total_m:,.0f}")
-else:
-    st.write("No hay clientes registrados")
+    st.metric(label="Recaudación Mensual Esperada", value=f"${total_m:,.0f}")
