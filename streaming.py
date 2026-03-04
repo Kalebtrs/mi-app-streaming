@@ -3,71 +3,47 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
 
-# 1. CONFIGURACIÓN DE PÁGINA
+# 1. Configuración de página
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS: MÁXIMA ELEVACIÓN Y SIMETRÍA
+# 2. CSS: Diseño, espacios y alertas
 st.markdown("""
     <style>
-    /* Eleva todo el contenido hacia el borde superior */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
-    }
-    
     .main-title {
         font-size: 2.2rem !important;
-        font-weight: 700;
-        color: #FFFFFF;
+        font-weight: 800;
+        background: linear-gradient(90deg, #00DBDE 0%, #FC00FF 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
-    
-    /* Reset de formularios y eliminación de espacios */
     div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
-    .stForm > div { padding-top: 10px !important; }
-
-    /* Estilo industrial para Expanders */
-    .stExpander details summary { 
-        display: flex !important; 
-        justify-content: space-between; 
-        align-items: center; 
-        font-weight: 600;
-        padding: 0.5rem 1rem !important;
-    }
-    .stExpander details summary svg { order: 2 !important; margin-left: auto !important; }
-
-    /* Cuadros de Alerta Minimalistas */
-    .alerta-pago {
-        padding: 10px 14px;
-        border-radius: 2px;
-        margin-bottom: 6px;
-        border: 1px solid #333;
-        background-color: #0e0e0e;
-        font-size: 0.9rem;
-    }
-    .hoy { border-left: 3px solid #E50914; } 
-    .manana { border-left: 3px solid #444; }
     
-    /* Botón Guardar */
-    div.stButton > button:first-child {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: none !important;
-        border-radius: 2px !important;
-        font-weight: 700 !important;
-        float: right;
-        margin-top: 15px;
-    }
+    .stForm > div:last-child { padding-top: 60px !important; }
 
-    /* Ocultar etiquetas de métricas para limpieza */
-    [data-testid="stMetricLabel"] { font-size: 0.8rem !important; }
+    /* Alertas de pago */
+    .alerta-pago {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        border-left: 6px solid;
+    }
+    .hoy { background-color: rgba(255, 75, 75, 0.1); border-color: #ff4b4b; color: #ff4b4b; }
+    .manana { background-color: rgba(255, 215, 0, 0.1); border-color: #ffd700; color: #d4af37; }
+    
+    div.stButton > button:first-child {
+        background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        font-weight: bold !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. DATOS Y CONEXIÓN
+# 3. Datos y Conexión
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -78,18 +54,19 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 try:
     df = conn.read(worksheet="Hoja 1", ttl=0)
     df = df.dropna(how="all")
+    # Asegurar que existan las columnas necesarias
     if "Pagado" not in df.columns:
         df["Pagado"] = "NO"
 except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"])
 
-# --- PANEL 1: NUEVO CLIENTE ---
+# --- SECCIÓN REGISTRO ---
 with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
-        nombre = st.text_input("Nombre", placeholder="Nombre completo")
+        nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()))
         dias = [str(i) for i in range(1, 32)]
-        dia = st.selectbox("Dia de Corte", options=dias, index=None, placeholder="Seleccionar dia")
+        dia = st.selectbox("Día de Corte", options=dias, index=None, placeholder="Selecciona dia de corte")
         
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
@@ -105,61 +82,60 @@ with st.expander("Nuevo Cliente", expanded=False):
                 conn.update(worksheet="Hoja 1", data=df)
                 st.rerun()
 
-# --- PANEL 2: GESTIONAR (Solo eliminar) ---
-with st.expander("Gestionar Registro", expanded=False):
-    if not df.empty:
-        borrar = st.selectbox("Seleccionar Cliente para eliminar", df["Nombre"].unique())
-        if st.button("Confirmar Eliminacion", type="primary", use_container_width=True):
-            df = df[df["Nombre"] != borrar]
+# --- GESTIONAR ---
+with st.expander("Gestionar"):
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("Reiniciar todos los pagos"):
+            df["Pagado"] = "NO"
             conn.update(worksheet="Hoja 1", data=df)
             st.rerun()
-    else:
-        st.write("No hay registros para gestionar.")
+    with col_b:
+        if not df.empty:
+            borrar = st.selectbox("Eliminar cliente", df["Nombre"].unique())
+            if st.button("CONFIRMAR ELIMINAR", type="primary"):
+                df = df[df["Nombre"] != borrar]
+                conn.update(worksheet="Hoja 1", data=df)
+                st.rerun()
 
-# --- PANEL 3: LISTA DE CLIENTES ---
-with st.expander("Base de Datos", expanded=True):
-    if not df.empty:
-        st.dataframe(
-            df[["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"]], 
-            use_container_width=True, 
-            hide_index=True
-        )
-        total_m = pd.to_numeric(df["Total a Pagar"]).sum()
-        st.metric(label="Ingreso Mensual", value=f"${total_m:,.0f}")
-    else:
-        st.info("Sin datos registrados.")
+# --- SECCIÓN DE COBROS (HOY Y MAÑANA) ---
+st.write("---")
+hoy_dt = datetime.now()
+dia_hoy = hoy_dt.day
+dia_manana = (hoy_dt + timedelta(days=1)).day
+df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
 
-# --- PANEL 4: ALERTAS ---
-st.markdown("### Alertas de Cobro")
+col1, col2 = st.columns(2)
 
-if not df.empty:
-    hoy_dt = datetime.now()
-    dia_hoy = hoy_dt.day
-    dia_manana = (hoy_dt + timedelta(days=1)).day
-    df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
-
-    # Alertas de Hoy
+with col1:
+    st.subheader("Pagos Hoy")
+    # Solo muestra los de HOY que NO han pagado
     clientes_hoy = df[(df['Dia'] == dia_hoy) & (df['Pagado'] == "NO")]
     if not clientes_hoy.empty:
-        st.write("**Pendientes Hoy**")
         for i, row in clientes_hoy.iterrows():
-            col_info, col_btn = st.columns([5, 1.2])
-            with col_info:
-                st.markdown(f'<div class="alerta-pago hoy"><strong>{row["Nombre"]}</strong> | ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
-            with col_btn:
-                if st.button("PAGADO", key=f"pay_{i}", use_container_width=True):
-                    df.at[i, "Pagado"] = "SI"
-                    conn.update(worksheet="Hoja 1", data=df)
-                    st.rerun()
-    
-    # Alertas de Mañana
+            st.markdown(f'<div class="alerta-pago hoy"><strong>{row["Nombre"]}</strong><br>${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
+            if st.button(f"Confirmar Pago de {row['Nombre']}", key=f"pay_{i}"):
+                df.at[i, "Pagado"] = "SÍ"
+                conn.update(worksheet="Hoja 1", data=df)
+                st.rerun()
+    else:
+        st.success("¡Todo cobrado hoy!")
+
+with col2:
+    st.subheader("Pagos Mañana")
     clientes_manana = df[df['Dia'] == dia_manana]
     if not clientes_manana.empty:
-        st.write("**Proximos Mañana**")
         for _, row in clientes_manana.iterrows():
-            st.markdown(f'<div class="alerta-pago manana">{row["Nombre"]} | ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="alerta-pago manana"><strong>{row["Nombre"]}</strong><br>${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
+    else:
+        st.write("Sin cobros para mañana")
+
+# --- LISTA COMPLETA ---
+st.write("---")
+if not df.empty:
+    st.write("### Lista de Clientes")
+    # Mostramos la lista con el estado de pago
+    st.dataframe(df[["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"]], use_container_width=True, hide_index=True)
     
-    if clientes_hoy.empty and clientes_manana.empty:
-        st.write("Sin cobros pendientes para hoy o mañana.")
-else:
-    st.write("No hay alertas disponibles.")
+    total_m = pd.to_numeric(df["Total a Pagar"]).sum()
+    st.metric(label="Recaudación Mensual", value=f"${total_m:,.0f}")
