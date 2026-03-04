@@ -3,127 +3,52 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Streaming Manager", page_icon="🎬", layout="centered")
 
-# 2. DISEÑO ESTILO SPIN (Compacto y sin círculos)
+# Diseño
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #F7F7F9 !important; }
-    header, footer { visibility: hidden !important; }
-    
     .header-spin {
-        background-color: #6221E5;
-        color: white;
-        padding: 20px;
-        margin: 10px 0px 20px 0px;
-        text-align: center;
-        border-radius: 20px;
-        box-shadow: 0 4px 10px rgba(98, 33, 229, 0.2);
+        background-color: #6221E5; color: white; padding: 20px;
+        text-align: center; border-radius: 20px; margin-bottom: 20px;
     }
-    
-    .header-spin h1 { margin: 0; font-size: 24px; font-weight: bold; }
-    .header-spin p { margin: 5px 0 0 0; opacity: 0.9; font-size: 14px; }
-
-    .client-box {
-        background-color: white;
-        padding: 12px 18px;
-        border-radius: 15px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: 1px solid #EEE;
-    }
-    
-    .stButton>button {
-        background-color: #6221E5 !important;
-        color: white !important;
-        border-radius: 12px !important;
-        height: 48px !important;
-        width: 100% !important;
-        font-weight: bold !important;
-    }
-
-    label { font-weight: bold !important; color: #333 !important; }
+    .stButton>button { background-color: #6221E5 !important; color: white !important; width: 100%; border-radius: 12px; }
     </style>
-    
     <div class="header-spin">
         <h1>¡Qué gusto verte!</h1>
         <p>Tu Central de Streaming</p>
     </div>
 """, unsafe_allow_html=True)
 
-# 3. CONEXIÓN A GOOGLE SHEETS
+# Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Leer datos de tu archivo "Hoja 1"
+# Cargar datos de la "Hoja 1"
 try:
     df = conn.read(worksheet="Hoja 1", ttl=0).dropna(how="all")
-except Exception:
+except:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia"])
 
-# 4. FORMULARIO DE REGISTRO
-with st.container():
-    with st.form("registro_cliente", clear_on_submit=True):
-        nombre = st.text_input("NOMBRE DEL CLIENTE", placeholder="¿A quién registramos?")
-        
-        plataformas = st.multiselect(
-            "SELECCIONA LA PLATAFORMA", 
-            ["Netflix", "Disney+", "HBO Max", "Vix Premium", "Prime Video", "Paramount+", "Combo Total"],
-            placeholder="Selecciona la plataforma"
-        )
-        
-        dia = st.number_input("DIA DE CORTE", min_value=1, max_value=31, value=None, placeholder="Escribe el día de corte")
-        
-        if st.form_submit_button("GUARDAR CLIENTE"):
-            if nombre and plataformas and dia:
-                new_row = pd.DataFrame([{
-                    "Nombre": nombre.upper(),
-                    "Plataformas": ", ".join(plataformas),
-                    "Dia": int(dia)
-                }])
-                
-                df_actualizado = pd.concat([df, new_row], ignore_index=True)
-                
-                try:
-                    # Guardado directo en tu archivo Hoja 1
-                    conn.update(worksheet="Hoja 1", data=df_actualizado)
-                    st.success("✅ ¡Cliente guardado correctamente!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error al guardar: {e}")
-            else:
-                st.warning("⚠️ Por favor rellena todos los campos.")
-
-# 5. LISTADO DE CLIENTES
-st.markdown("---")
-st.markdown("### Clientes Registrados")
-
-if not df.empty:
-    hoy = datetime.now().day
-    df['Dia'] = pd.to_numeric(df['Dia'], errors='coerce')
+# Formulario
+with st.form("registro", clear_on_submit=True):
+    nombre = st.text_input("NOMBRE DEL CLIENTE")
+    plataformas = st.multiselect("SELECCIONA LA PLATAFORMA", ["Netflix", "Disney+", "HBO Max", "Vix Premium", "Prime Video", "Paramount+", "Combo Total"], placeholder="Selecciona la plataforma")
+    dia = st.number_input("DIA DE CORTE", 1, 31, value=None, placeholder="Día de corte")
     
-    for i, fila in df.iterrows():
-        es_hoy = fila['Dia'] == hoy
-        bg_color = "#F0E9FF" if es_hoy else "white"
-        border_color = "#6221E5" if es_hoy else "#EEE"
-
-        st.markdown(f"""
-        <div class="client-box" style="border-left: 6px solid {border_color}; background-color: {bg_color};">
-            <div>
-                <b style="color:#333;">{fila['Nombre']}</b><br>
-                <small style="color:#666;">{fila['Plataformas']}</small>
-            </div>
-            <div style="text-align: right;">
-                <span style="color:#6221E5; font-weight:bold;">Día {int(fila['Dia'])}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("Eliminar", key=f"del_{i}"):
-            df_final = df.drop(i)
+    if st.form_submit_button("GUARDAR CLIENTE"):
+        if nombre and plataformas and dia:
+            nueva_fila = pd.DataFrame([{"Nombre": nombre.upper(), "Plataformas": ", ".join(plataformas), "Dia": int(dia)}])
+            df_final = pd.concat([df, nueva_fila], ignore_index=True)
             conn.update(worksheet="Hoja 1", data=df_final)
+            st.success("¡Guardado!")
             st.rerun()
-else:
-    st.info("No hay clientes registrados en la Hoja 1.")
+
+# Lista
+st.markdown("### Clientes Registrados")
+for i, fila in df.iterrows():
+    st.write(f"👤 **{fila['Nombre']}** - {fila['Plataformas']} (Día {int(fila['Dia'])})")
+    if st.button("Eliminar", key=f"del_{i}"):
+        df_borrar = df.drop(i)
+        conn.update(worksheet="Hoja 1", data=df_borrar)
+        st.rerun()
