@@ -3,6 +3,26 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
+# --- SEGURIDAD: LOGIN SIMPLE ---
+def check_password():
+    if "password_correct" not in st.session_state:
+        st.session_state.password_correct = False
+
+    if st.session_state.password_correct:
+        return True
+
+    st.title("Acceso Restringido")
+    password = st.text_input("Introduce la contraseña para entrar", type="password")
+    if st.button("Entrar"):
+        if password == "0303": # <--- Cambia esto
+            st.session_state.password_correct = True
+            st.rerun()
+        else:
+            st.error("Contraseña incorrecta")
+    return False
+
+if not check_password():
+    st.stop()
 # Precios actualizados
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
@@ -80,3 +100,4 @@ if not df_existente.empty:
                 df_final = df_existente.drop(i)
                 conn.update(data=df_final)
                 st.rerun()
+
