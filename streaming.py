@@ -6,57 +6,62 @@ from datetime import datetime, timedelta
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS: SIMETRÍA Y ESTILO MINIMALISTA
+# 2. CSS: MÁXIMA ELEVACIÓN Y SIMETRÍA
 st.markdown("""
     <style>
-    /* Título limpio y centrado */
+    /* Eleva todo el contenido hacia el borde superior */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+    
     .main-title {
-        font-size: 2.5rem !important;
+        font-size: 2.2rem !important;
         font-weight: 700;
         color: #FFFFFF;
         text-align: center;
-        margin-top: 0px;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
     }
     
-    /* Reset de formularios para eliminar espacios excesivos */
+    /* Reset de formularios y eliminación de espacios */
     div[data-testid="stForm"] { border: none !important; padding: 0 !important; }
-    
-    /* Ajuste de espaciado interno del formulario para simetría */
-    .stForm > div { padding-top: 20px !important; }
+    .stForm > div { padding-top: 10px !important; }
 
-    /* Alineación de flechas de expander */
+    /* Estilo industrial para Expanders */
+    .stExpander details summary { 
+        display: flex !important; 
+        justify-content: space-between; 
+        align-items: center; 
+        font-weight: 600;
+        padding: 0.5rem 1rem !important;
+    }
     .stExpander details summary svg { order: 2 !important; margin-left: auto !important; }
-    .stExpander details summary { display: flex !important; justify-content: space-between; align-items: center; font-weight: 600; }
 
-    /* Cuadros de Alerta Neutros */
+    /* Cuadros de Alerta Minimalistas */
     .alerta-pago {
-        padding: 12px 16px;
-        border-radius: 4px;
-        margin-bottom: 8px;
+        padding: 10px 14px;
+        border-radius: 2px;
+        margin-bottom: 6px;
         border: 1px solid #333;
-        background-color: #111;
-        font-family: sans-serif;
+        background-color: #0e0e0e;
+        font-size: 0.9rem;
     }
     .hoy { border-left: 3px solid #E50914; } 
-    .manana { border-left: 3px solid #555; }
+    .manana { border-left: 3px solid #444; }
     
-    /* Botón de Guardar Simétrico */
+    /* Botón Guardar */
     div.stButton > button:first-child {
         background-color: #FFFFFF !important;
         color: #000000 !important;
         border: none !important;
-        border-radius: 4px !important;
-        padding: 0.5rem 2rem !important;
+        border-radius: 2px !important;
         font-weight: 700 !important;
         float: right;
-        margin-top: 20px;
+        margin-top: 15px;
     }
 
-    /* Ajuste de métricas */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;
-    }
+    /* Ocultar etiquetas de métricas para limpieza */
+    [data-testid="stMetricLabel"] { font-size: 0.8rem !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -81,10 +86,10 @@ except Exception:
 # --- PANEL 1: NUEVO CLIENTE ---
 with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
-        nombre = st.text_input("Nombre", placeholder="Escriba el nombre completo...")
+        nombre = st.text_input("Nombre", placeholder="Nombre completo")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()))
         dias = [str(i) for i in range(1, 32)]
-        dia = st.selectbox("Dia de Corte", options=dias, index=None, placeholder="Seleccione el dia")
+        dia = st.selectbox("Dia de Corte", options=dias, index=None, placeholder="Seleccionar dia")
         
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
@@ -100,24 +105,19 @@ with st.expander("Nuevo Cliente", expanded=False):
                 conn.update(worksheet="Hoja 1", data=df)
                 st.rerun()
 
-# --- PANEL 2: GESTIONAR ---
-with st.expander("Gestionar Sistema", expanded=False):
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("Reiniciar Ciclo", use_container_width=True):
-            df["Pagado"] = "NO"
+# --- PANEL 2: GESTIONAR (Solo eliminar) ---
+with st.expander("Gestionar Registro", expanded=False):
+    if not df.empty:
+        borrar = st.selectbox("Seleccionar Cliente para eliminar", df["Nombre"].unique())
+        if st.button("Confirmar Eliminacion", type="primary", use_container_width=True):
+            df = df[df["Nombre"] != borrar]
             conn.update(worksheet="Hoja 1", data=df)
             st.rerun()
-    with col_b:
-        if not df.empty:
-            borrar = st.selectbox("Eliminar Registro", df["Nombre"].unique())
-            if st.button("Confirmar Eliminacion", type="primary", use_container_width=True):
-                df = df[df["Nombre"] != borrar]
-                conn.update(worksheet="Hoja 1", data=df)
-                st.rerun()
+    else:
+        st.write("No hay registros para gestionar.")
 
 # --- PANEL 3: LISTA DE CLIENTES ---
-with st.expander("Base de Clientes", expanded=True):
+with st.expander("Base de Datos", expanded=True):
     if not df.empty:
         st.dataframe(
             df[["Nombre", "Plataformas", "Dia", "Total a Pagar", "Pagado"]], 
@@ -127,11 +127,10 @@ with st.expander("Base de Clientes", expanded=True):
         total_m = pd.to_numeric(df["Total a Pagar"]).sum()
         st.metric(label="Ingreso Mensual", value=f"${total_m:,.0f}")
     else:
-        st.info("Sin registros en la base de datos.")
+        st.info("Sin datos registrados.")
 
 # --- PANEL 4: ALERTAS ---
-st.write("---")
-st.subheader("Alertas de Cobro")
+st.markdown("### Alertas de Cobro")
 
 if not df.empty:
     hoy_dt = datetime.now()
@@ -144,11 +143,11 @@ if not df.empty:
     if not clientes_hoy.empty:
         st.write("**Pendientes Hoy**")
         for i, row in clientes_hoy.iterrows():
-            col_info, col_btn = st.columns([5, 1])
+            col_info, col_btn = st.columns([5, 1.2])
             with col_info:
-                st.markdown(f'<div class="alerta-pago hoy"><strong>{row["Nombre"]}</strong> | Total: ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="alerta-pago hoy"><strong>{row["Nombre"]}</strong> | ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
             with col_btn:
-                if st.button("PAGADO", key=f"pay_{i}"):
+                if st.button("PAGADO", key=f"pay_{i}", use_container_width=True):
                     df.at[i, "Pagado"] = "SI"
                     conn.update(worksheet="Hoja 1", data=df)
                     st.rerun()
@@ -158,9 +157,9 @@ if not df.empty:
     if not clientes_manana.empty:
         st.write("**Proximos Mañana**")
         for _, row in clientes_manana.iterrows():
-            st.markdown(f'<div class="alerta-pago manana">{row["Nombre"]} | Total: ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="alerta-pago manana">{row["Nombre"]} | ${row["Total a Pagar"]}</div>', unsafe_allow_html=True)
     
     if clientes_hoy.empty and clientes_manana.empty:
-        st.write("No hay cobros programados para hoy o mañana.")
+        st.write("Sin cobros pendientes para hoy o mañana.")
 else:
-    st.write("No hay datos para generar alertas.")
+    st.write("No hay alertas disponibles.")
