@@ -5,26 +5,13 @@ from streamlit_gsheets import GSheetsConnection
 # Configuracion de la pagina
 st.set_page_config(page_title="Gestor Streaming", layout="centered")
 
-# CSS para el Modo Oscuro Personalizado
+# CSS para el estilo oscuro
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0E1117;
-        color: #FAFAFA;
-    }
-    .stForm {
-        background-color: #161B22;
-        border: 1px solid #30363D;
-        border-radius: 10px;
-        padding: 20px;
-    }
-    .stExpander {
-        background-color: #161B22;
-        border: 1px solid #30363D;
-    }
-    h1 {
-        color: #58A6FF !important;
-    }
+    .stApp { background-color: #0E1117; color: #FAFAFA; }
+    .stForm { background-color: #161B22; border: 1px solid #30363D; border-radius: 10px; padding: 20px; }
+    .stExpander { background-color: #161B22; border: 1px solid #30363D; }
+    h1 { color: #58A6FF !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,16 +37,17 @@ except Exception:
 
 # --- SECCION: REGISTRAR ---
 with st.expander("Registrar Nuevo Cliente", expanded=True):
-    # clear_on_submit limpia los campos visualmente al terminar
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre del Cliente")
+        
+        # El total empieza en 0 y solo suma si hay seleccion
         seleccionadas = st.multiselect("Selecciona las Plataformas / Combos", list(PRECIOS.keys()))
         
-        # Selector de dia sin el numero 1 por defecto
         opciones_dias = ["Selecciona dia de corte"] + [str(i) for i in range(1, 32)]
         dia_seleccionado = st.selectbox("Dia de Corte", opciones_dias)
         
-        total_pago = sum(PRECIOS[p] for p in seleccionadas)
+        # Logica del total: empieza en 0 si no hay nada seleccionado
+        total_pago = sum(PRECIOS[p] for p in seleccionadas) if seleccionadas else 0
         st.write(f"Total a pagar calculado: ${total_pago}")
         
         btn_guardar = st.form_submit_button("Guardar en la Base de Datos")
@@ -72,13 +60,10 @@ with st.expander("Registrar Nuevo Cliente", expanded=True):
                     "Dia": [int(dia_seleccionado)],
                     "Total a Pagar": [total_pago]
                 })
-                
                 df_actualizado = pd.concat([df, nueva_fila], ignore_index=True)
-                
                 try:
                     conn.update(worksheet="Hoja 1", data=df_actualizado)
                     st.success("Registro guardado")
-                    # Rerun para limpiar el estado interno y actualizar la tabla
                     st.rerun()
                 except Exception:
                     st.error("Error de conexion")
@@ -102,7 +87,6 @@ st.write("---")
 st.write("### Clientes Activos")
 if not df.empty:
     df["Total a Pagar"] = pd.to_numeric(df["Total a Pagar"], errors='coerce').fillna(0)
-    # Tabla con estilo adaptado al modo oscuro
     st.dataframe(df, use_container_width=True, hide_index=True)
     
     total_mensual = df["Total a Pagar"].sum()
