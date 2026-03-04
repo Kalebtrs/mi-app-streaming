@@ -5,7 +5,7 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configuracion de pagina
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Avanzado para el Boton "Ultra Llamativo"
+# 2. CSS Avanzado para alineación y botón "Ultra Llamativo"
 st.markdown("""
     <style>
     /* Titulo con degradado */
@@ -19,6 +19,18 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
+    /* ALINEAR ELEMENTOS A LA DERECHA */
+    /* Alinea el botón Guardar Registro a la derecha */
+    div.stButton > button:first-child {
+        float: right;
+        margin-top: 10px;
+    }
+
+    /* Alinea el selector de Día de Corte a la derecha */
+    div[data-baseweb="select"] {
+        justify-content: flex-end;
+    }
+
     /* BOTON ULTRA LLAMATIVO */
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0);
@@ -29,7 +41,7 @@ st.markdown("""
         padding: 0.8rem !important;
         font-size: 1.1rem !important;
         font-weight: bold !important;
-        width: 100%;
+        /*width: 100%; <- Eliminamos esto para que no ocupe todo el ancho */
         box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
         transition: 0.5s;
         text-transform: uppercase;
@@ -78,6 +90,7 @@ with st.expander("Nuevo Cliente", expanded=False):
         dias = [str(i) for i in range(1, 32)]
         dia = st.selectbox("Día de Corte", options=dias, index=None, placeholder="Selecciona dia de corte")
         
+        # El botón de guardar ahora se alineará a la derecha gracias al CSS
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
                 total = sum(PRECIOS.get(s, 0) for s in servicios)
