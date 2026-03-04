@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configuracion de pagina optimizada
+# 1. Configuración de página - Sin forzar tema fijo
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Estilo Neon y Mobile-First
+# 2. CSS Dinámico: Usamos variables de Streamlit para que cambien con el tema
 st.markdown("""
     <style>
-    .stApp { background-color: #0B0E14; color: #E0E0E0; }
+    /* El título mantendrá un degradado que se ve bien en ambos temas */
     .main-title {
         font-size: 2.2rem !important;
         font-weight: 800;
@@ -18,26 +18,26 @@ st.markdown("""
         text-align: center;
         margin-bottom: 1.5rem;
     }
+    
+    /* Las tarjetas ahora usan el color de fondo secundario del tema actual */
     .stForm, .stExpander {
-        background-color: #1A1F29 !important;
-        border: 1px solid #30363D !important;
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
         border-radius: 12px !important;
     }
+
+    /* Botones con estilo adaptable */
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #00C6FF, #0072FF);
         color: white; border: none; border-radius: 8px;
         width: 100%; font-weight: bold;
     }
-    div.stButton > button[kind="primary"] {
-        background: linear-gradient(45deg, #FF416C, #FF4B2B) !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
-# Titulo Neon (Streaming Control)
+# Título Principal
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. Diccionario y Conexion
+# 3. Conexión y Datos
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -51,7 +51,7 @@ try:
 except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
-# --- SECCION REGISTRO (Cerrada por defecto para vista limpia) ---
+# --- REGISTRO (Cerrado por defecto) ---
 with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
@@ -72,7 +72,7 @@ with st.expander("Nuevo Cliente", expanded=False):
                 conn.update(worksheet="Hoja 1", data=df_act)
                 st.rerun()
 
-# --- SECCION GESTION ---
+# --- GESTIÓN ---
 if not df.empty:
     with st.expander("Gestionar"):
         borrar = st.selectbox("Seleccionar para eliminar", df["Nombre"].unique())
@@ -81,15 +81,15 @@ if not df.empty:
             conn.update(worksheet="Hoja 1", data=df_new)
             st.rerun()
 
-# --- LISTA DE CLIENTES (Vista inicial despejada) ---
+# --- LISTA DE CLIENTES ---
 st.write("---")
 st.write("### Lista de Clientes")
 
 if not df.empty:
-    # Formato de tabla ordenado
     df_v = df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]].copy()
     df_v["Total a Pagar"] = pd.to_numeric(df_v["Total a Pagar"]).fillna(0)
     
+    # La tabla de Streamlit se adapta sola al modo claro/oscuro
     st.dataframe(
         df_v, 
         use_container_width=True, 
@@ -100,9 +100,7 @@ if not df.empty:
         }
     )
     
-    # Metrica al final
     total_m = df_v["Total a Pagar"].sum()
     st.metric(label="Total Mensual", value=f"${total_m:,.0f}")
 else:
-    # Mensaje cuando no hay datos (Igual a tu imagen)
     st.write("No hay clientes registrados")
