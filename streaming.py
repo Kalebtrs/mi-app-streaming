@@ -3,7 +3,7 @@ from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Lista de Precios
+# Precios de tu lista
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -11,23 +11,22 @@ PRECIOS = {
 
 st.title("Gestor de Pagos Streaming")
 
-# 2. Conexión simplificada
-# Usamos ttl=0 para que no guarde memoria vieja y siempre lea lo nuevo
+# Conexión a tu hoja "App"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# Cargar datos
 try:
-    # Leemos la hoja de forma pública
     df_existente = conn.read(ttl=0)
     df_existente = df_existente.dropna(how="all")
 except Exception:
     df_existente = pd.DataFrame(columns=["Nombre", "Plataformas", "Total", "Dia"])
 
-# 3. Registro de Clientes
+# Registro
 with st.form("nuevo_cliente", clear_on_submit=True):
     st.subheader("Registrar Nuevo Cliente")
     nombre = st.text_input("Nombre del Cliente")
     
-    with st.expander("Plataformas (Toca para abrir)"):
+    with st.expander("Plataformas (Abrir/Cerrar)"):
         plataformas_elegidas = []
         for p in PRECIOS.keys():
             if st.checkbox(p, key=f"ch_{p}"):
@@ -47,32 +46,26 @@ with st.form("nuevo_cliente", clear_on_submit=True):
             }])
             
             df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
-            # Intentar actualizar
             conn.update(data=df_final)
-            st.success(f"Guardado: {nombre}")
+            st.success(f"Guardado con éxito en tu Google Sheet")
             st.rerun()
 
-# 4. Alertas del día
+# Alertas y Lista
 hoy = datetime.now().day
 st.header(f"Alertas para hoy (Dia {hoy})")
 if not df_existente.empty:
     df_existente['Dia'] = pd.to_numeric(df_existente['Dia'], errors='coerce')
     deudores = df_existente[df_existente['Dia'] == hoy]
     
-    if not deudores.empty:
-        for _, fila in deudores.iterrows():
-            st.error(f"PAGO PENDIENTE: {fila['Nombre']} - ${fila['Total']}")
-    else:
-        st.info("Sin pagos para hoy")
+    for _, fila in deudores.iterrows():
+        st.error(f"PAGO: {fila['Nombre']} - ${fila['Total']}")
 
-# 5. Lista completa
-if not df_existente.empty:
     st.divider()
     st.subheader("Clientes Registrados")
     for i, fila in df_existente.iterrows():
         with st.expander(f"{fila['Nombre']} - Dia {fila['Dia']}"):
             st.write(f"Servicios: {fila['Plataformas']}")
-            st.write(f"Total: ${fila['Total']}")
+            st.write(f"Cobro: ${fila['Total']}")
             if st.button("Eliminar", key=f"del_{i}"):
                 df_final = df_existente.drop(i)
                 conn.update(data=df_final)
