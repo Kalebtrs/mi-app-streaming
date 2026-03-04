@@ -5,7 +5,7 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Configuracion de pagina
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Mejorado: Eliminando recuadro interno y ajustando flechas
+# 2. CSS: Espaciado extra y diseño limpio
 st.markdown("""
     <style>
     .main-title {
@@ -18,15 +18,13 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* --- ELIMINAR RECUADRO INTERNO DEL FORMULARIO --- */
+    /* --- ELIMINAR RECUADRO INTERNO --- */
     div[data-testid="stForm"] {
-        border: none !important; /* Elimina la linea del segundo recuadro */
+        border: none !important;
         padding: 0 !important;
-        background-color: transparent !important;
     }
 
-    /* --- AJUSTE DE FLECHA DEL EXPANDER (Nuevo Cliente) --- */
-    /* Mueve la flechita del expander a la derecha como en tu dibujo */
+    /* --- FLECHA DEL EXPANDER A LA DERECHA --- */
     .stExpander details summary svg {
         order: 2 !important;
         margin-left: auto !important;
@@ -38,14 +36,16 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* --- BOTON GUARDAR A LA DERECHA --- */
+    /* --- EL ESPACIO QUE PEDISTE (Día de corte vs Botón) --- */
     .stForm > div:last-child {
         display: flex !important;
         justify-content: flex-end !important;
         width: 100% !important;
-        padding-top: 15px;
+        padding-top: 60px !important; /* <--- Aumentado a 60px para el espacio marcado en rojo */
+        margin-bottom: 10px !important;
     }
 
+    /* BOTON LLAMATIVO Y A LA DERECHA */
     div.stButton > button:first-child {
         background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0) !important;
         background-size: 200% auto !important;
@@ -76,7 +76,7 @@ st.markdown("""
 
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. Conexion y Datos
+# 3. Datos y Conexion
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -90,15 +90,16 @@ try:
 except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
-# --- REGISTRO ---
+# --- SECCION REGISTRO ---
 with st.expander("Nuevo Cliente", expanded=False):
-    # El formulario ahora no tiene borde gracias al CSS de arriba
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()), placeholder="Selecciona el servicio")
+        
         dias = [str(i) for i in range(1, 32)]
         dia = st.selectbox("Día de Corte", options=dias, index=None, placeholder="Selecciona dia de corte")
         
+        # El espacio se aplica aquí arriba mediante el padding-top del CSS
         if st.form_submit_button("GUARDAR REGISTRO"):
             if nombre and servicios and dia:
                 total = sum(PRECIOS.get(s, 0) for s in servicios)
@@ -115,16 +116,16 @@ with st.expander("Nuevo Cliente", expanded=False):
 # --- LISTA Y GESTION ---
 st.write("---")
 if not df.empty:
-    df_v = df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]].copy()
     st.write("### Lista de Clientes")
+    df_v = df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]].copy()
     st.dataframe(df_v, use_container_width=True, hide_index=True)
     
     total_m = pd.to_numeric(df_v["Total a Pagar"]).sum()
     st.metric(label="Total Mensual", value=f"${total_m:,.0f}")
 
     with st.expander("Gestionar"):
-        borrar = st.selectbox("Eliminar cliente", df["Nombre"].unique())
-        if st.button("ELIMINAR", type="primary"):
+        borrar = st.selectbox("Seleccionar para eliminar", df["Nombre"].unique())
+        if st.button("ELIMINAR CLIENTE", type="primary"):
             df_new = df[df["Nombre"] != borrar]
             conn.update(worksheet="Hoja 1", data=df_new)
             st.rerun()
