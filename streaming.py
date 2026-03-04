@@ -72,7 +72,7 @@ except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
 # --- REGISTRO (Diseño Compacto) ---
-with st.expander("⚡ Nuevo Cliente", expanded=True):
+with st.expander("Nuevo Cliente", expanded=True):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Ej: Juan Pérez")
         
@@ -101,7 +101,7 @@ with st.expander("⚡ Nuevo Cliente", expanded=True):
 
 # --- GESTIÓN (Eliminar) ---
 if not df.empty:
-    with st.expander("🗑️ Gestionar"):
+    with st.expander("Gestionar"):
         borrar = st.selectbox("Seleccionar cliente", df["Nombre"].unique())
         if st.button("ELIMINAR CLIENTE", type="primary"):
             df_new = df[df["Nombre"] != borrar]
@@ -110,7 +110,7 @@ if not df.empty:
 
 # --- LISTADO ADAPTABLE ---
 st.markdown("---")
-st.markdown("### 📋 Lista de Clientes")
+st.markdown("###  Lista de Clientes")
 
 if not df.empty:
     # Ordenamos y formateamos la tabla
@@ -133,3 +133,4 @@ if not df.empty:
     )
 else:
     st.info("No hay clientes registrados.")
+
