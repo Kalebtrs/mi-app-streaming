@@ -39,8 +39,6 @@ st.subheader(f"📅 Alertas para hoy (Día {dia_actual})")
 
 # Ejemplo de datos (En una app real, esto vendría de una base de datos)
 clientes_demo = [
-    {"Nombre": "CAPISTRAN", "Dia": 30, "Total": 50},
-    {"Nombre": "KARELI", "Dia": 4, "Total": 70}, # Ejemplo para hoy si fuera día 4
 ]
 
 for c in clientes_demo:
@@ -54,4 +52,5 @@ with st.sidebar:
     st.header("Lista de Precios")
     df_precios = pd.DataFrame(list(PRECIOS.items()), columns=['Plataforma', 'Precio'])
     st.table(df_precios)
+
 
