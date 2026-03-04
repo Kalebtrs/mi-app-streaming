@@ -84,7 +84,7 @@ with st.container():
                     "Dia": int(dia)
                 }])
                 df_actualizado = pd.concat([df, new_row], ignore_index=True)
-                conn.update(data=df_actualizado)
+                conn.update(worksheet="Sheet1", data=df_actualizado)
                 st.rerun()
             else:
                 st.warning("Por favor rellena todos los campos antes de guardar.")
@@ -108,4 +108,5 @@ if not df.empty:
             df_final = df.drop(i)
             conn.update(data=df_final)
             st.rerun()
+
 
