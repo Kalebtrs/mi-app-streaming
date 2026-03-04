@@ -77,9 +77,10 @@ with st.container():
 
 # 4. Lista de Clientes registrados
 st.write("---")
-st.markdown("###Lista de Clientes")
+st.markdown("Lista de Clientes")
 if not df.empty:
     st.dataframe(df, use_container_width=True, hide_index=True)
 else:
     st.write("No hay clientes registrados todavía.")
+
 
