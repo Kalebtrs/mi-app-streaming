@@ -74,7 +74,7 @@ with st.container():
         )
         
         # CAMBIO 2: Cambia la etiqueta y permite que empiece vacío o en 0
-        dia = st.number_input("DIA DE CORTE", min_value=1, max_value=31, value=None, placeholder="Escribe el día de corte")
+        dia = st.number_input("DIA DE CORTE", min_value=1, max_value=31, value=None, placeholder="Día de corte")
         
         if st.form_submit_button("GUARDAR CLIENTE"):
             if nombre and plataformas and dia:
@@ -108,3 +108,4 @@ if not df.empty:
             df_final = df.drop(i)
             conn.update(data=df_final)
             st.rerun()
+
