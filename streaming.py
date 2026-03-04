@@ -22,7 +22,7 @@ st.markdown("""
     
     /* ESPACIO ENTRE DÍA DE CORTE Y BOTÓN */
     .stForm > div:last-child {
-        padding-top: 60px !important; 
+        margin-top: 40px !important; 
     }
 
     div.stButton > button:first-child {
@@ -117,4 +117,5 @@ if not df.empty:
     
     total_m = pd.to_numeric(df["Total a Pagar"]).sum()
     st.metric(label="Recaudación Mensual Esperada", value=f"${total_m:,.0f}")
+
 
