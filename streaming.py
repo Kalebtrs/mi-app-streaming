@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Configuración de página - Sin forzar tema fijo
+# 1. Configuracion de pagina
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Dinámico: Usamos variables de Streamlit para que cambien con el tema
+# 2. CSS Avanzado para el Boton "Ultra Llamativo"
 st.markdown("""
     <style>
-    /* El título mantendrá un degradado que se ve bien en ambos temas */
+    /* Titulo con degradado */
     .main-title {
         font-size: 2.2rem !important;
         font-weight: 800;
@@ -18,26 +18,45 @@ st.markdown("""
         text-align: center;
         margin-bottom: 1.5rem;
     }
-    
-    /* Las tarjetas ahora usan el color de fondo secundario del tema actual */
-    .stForm, .stExpander {
-        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+
+    /* BOTON ULTRA LLAMATIVO */
+    div.stButton > button:first-child {
+        background: linear-gradient(45deg, #FF0080, #FF8C00, #40E0D0);
+        background-size: 200% auto;
+        color: white !important;
+        border: none !important;
         border-radius: 12px !important;
+        padding: 0.8rem !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        width: 100%;
+        box-shadow: 0 4px 15px rgba(255, 0, 128, 0.4);
+        transition: 0.5s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
-    /* Botones con estilo adaptable */
-    div.stButton > button:first-child {
-        background: linear-gradient(45deg, #00C6FF, #0072FF);
-        color: white; border: none; border-radius: 8px;
-        width: 100%; font-weight: bold;
+    /* Efecto al pasar el mouse (Hover) */
+    div.stButton > button:first-child:hover {
+        background-position: right center;
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(255, 0, 128, 0.6);
+        color: white !important;
+    }
+
+    /* Boton de eliminar mas sobrio pero claro */
+    div.stButton > button[kind="primary"] {
+        background: #FF4B2B !important;
+        border-radius: 8px !important;
+        text-transform: none;
+        letter-spacing: 0;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# Título Principal
 st.markdown("<h1 class='main-title'>Streaming Control</h1>", unsafe_allow_html=True)
 
-# 3. Conexión y Datos
+# 3. Datos y Conexion
 PRECIOS = {
     "Prime video": 50, "HBO": 70, "Netflix": 70, "Disney": 50, 
     "Vix": 30, "Combo 1": 85, "Combo 2": 100, "Combo 3": 110, "Combo 4": 115
@@ -51,7 +70,7 @@ try:
 except Exception:
     df = pd.DataFrame(columns=["Nombre", "Plataformas", "Dia", "Total a Pagar"])
 
-# --- REGISTRO (Cerrado por defecto) ---
+# --- SECCION REGISTRO ---
 with st.expander("Nuevo Cliente", expanded=False):
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
@@ -72,7 +91,7 @@ with st.expander("Nuevo Cliente", expanded=False):
                 conn.update(worksheet="Hoja 1", data=df_act)
                 st.rerun()
 
-# --- GESTIÓN ---
+# --- SECCION GESTION ---
 if not df.empty:
     with st.expander("Gestionar"):
         borrar = st.selectbox("Seleccionar para eliminar", df["Nombre"].unique())
@@ -89,7 +108,6 @@ if not df.empty:
     df_v = df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]].copy()
     df_v["Total a Pagar"] = pd.to_numeric(df_v["Total a Pagar"]).fillna(0)
     
-    # La tabla de Streamlit se adapta sola al modo claro/oscuro
     st.dataframe(
         df_v, 
         use_container_width=True, 
