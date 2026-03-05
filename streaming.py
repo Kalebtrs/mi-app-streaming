@@ -73,7 +73,8 @@ df["Dia"] = pd.to_numeric(df["Dia"], errors="coerce")
 # 🔔 1. ALERTAS (SUELTAS, NO EN PANEL)
 # =========================================================
 
-hoy = datetime.now().day
+from zoneinfo import ZoneInfo
+hoy = datetime.now(ZoneInfo("America/Mexico_City")).day
 clientes_hoy = df[df["Dia"] == hoy]
 
 if not clientes_hoy.empty:
@@ -154,3 +155,4 @@ with st.expander("Clientes Activos"):
         )
     else:
         st.info("No hay clientes registrados aún.")
+
