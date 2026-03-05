@@ -78,7 +78,6 @@ hoy = datetime.now(ZoneInfo("America/Mexico_City")).day
 clientes_hoy = df[df["Dia"] == hoy]
 
 if not clientes_hoy.empty:
-    st.subheader("🔔 Alertas de Pago Hoy")
     for _, row in clientes_hoy.iterrows():
         st.markdown(f"""
             <div class="pago-alerta">
@@ -155,4 +154,5 @@ with st.expander("Clientes Activos"):
         )
     else:
         st.info("No hay clientes registrados aún.")
+
 
