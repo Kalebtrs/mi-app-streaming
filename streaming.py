@@ -6,23 +6,23 @@ from datetime import datetime
 # 1. Configuración de página
 st.set_page_config(page_title="Streaming App", layout="centered")
 
-# 2. CSS Mejorado
+# 2. CSS
 st.markdown("""
     <style>
     .main-title {
-        font-size: 2.4rem !important;
-        font-weight: 900;
+        font-size: 2.2rem !important;
+        font-weight: 800;
         background: linear-gradient(90deg, #00DBDE 0%, #FC00FF 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
     div[data-testid="stExpander"] {
         border-radius: 15px !important;
         border: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         margin-bottom: 15px;
     }
 
@@ -34,18 +34,19 @@ st.markdown("""
     }
 
     .pago-alerta {
-        background: linear-gradient(90deg, rgba(255,75,75,0.15), rgba(255,0,0,0.05));
+        background-color: rgba(255, 75, 75, 0.12);
         border-left: 5px solid #ff4b4b;
         padding: 15px;
-        border-radius: 10px;
+        border-radius: 8px;
         margin-bottom: 10px;
     }
 
     .no-alerta {
-        background: rgba(0,255,150,0.08);
+        background-color: rgba(0, 255, 150, 0.1);
         border-left: 5px solid #00cc88;
         padding: 12px;
-        border-radius: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -69,36 +70,36 @@ except Exception:
 df["Dia"] = pd.to_numeric(df["Dia"], errors="coerce")
 
 # =========================================================
-# 🔴 1. ALERTAS
+# 🔔 1. ALERTAS (SUELTAS, NO EN PANEL)
 # =========================================================
 
-with st.expander("Alertas de Pago", expanded=True):
+hoy = datetime.now().day
+clientes_hoy = df[df["Dia"] == hoy]
 
-    hoy = datetime.now().day
-    clientes_hoy = df[df["Dia"] == hoy]
-
-    if not clientes_hoy.empty:
-        for _, row in clientes_hoy.iterrows():
-            st.markdown(f"""
-                <div class="pago-alerta">
-                    <strong>{row['Nombre']}</strong> debe pagar hoy 
-                    <strong>${row['Total a Pagar']}</strong><br>
-                    <small>Servicios: {row['Plataformas']}</small>
-                </div>
-            """, unsafe_allow_html=True)
-    else:
+if not clientes_hoy.empty:
+    st.subheader("🔔 Alertas de Pago Hoy")
+    for _, row in clientes_hoy.iterrows():
         st.markdown(f"""
-            <div class="no-alerta">
-                Hoy es día {hoy}. No hay cobros programados 🎉
+            <div class="pago-alerta">
+                <strong>{row['Nombre']}</strong> debe pagar hoy 
+                <strong>${row['Total a Pagar']}</strong><br>
+                <small>Servicios: {row['Plataformas']}</small>
             </div>
         """, unsafe_allow_html=True)
+else:
+    st.markdown(f"""
+        <div class="no-alerta">
+            Hoy es día {hoy}. No hay cobros programados 🎉
+        </div>
+    """, unsafe_allow_html=True)
+
+st.write("")
 
 # =========================================================
-# 🟣 2. NUEVOS CLIENTES
+# ➕ 2. NUEVO CLIENTE
 # =========================================================
 
 with st.expander("Nuevo Cliente"):
-
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
         servicios = st.multiselect("Plataformas y Combos", options=list(PRECIOS.keys()))
@@ -121,13 +122,12 @@ with st.expander("Nuevo Cliente"):
                 st.rerun()
 
 # =========================================================
-# 🟡 3. GESTIONAR
+# ⚙️ 3. GESTIONAR
 # =========================================================
 
-with st.expander("Gestionar Clientes"):
-
+with st.expander("Gestionar"):
     if not df.empty:
-        borrar = st.selectbox("Seleccionar cliente", df["Nombre"].unique())
+        borrar = st.selectbox("Seleccionar para eliminar", df["Nombre"].unique())
         if st.button("ELIMINAR CLIENTE"):
             df_new = df[df["Nombre"] != borrar]
             conn.update(worksheet="Hoja 1", data=df_new)
@@ -136,11 +136,10 @@ with st.expander("Gestionar Clientes"):
         st.info("No hay datos para gestionar.")
 
 # =========================================================
-# 🔵 4. CLIENTES ACTIVOS (AHORA EN PANEL)
+# 📋 4. CLIENTES ACTIVOS (PANEL)
 # =========================================================
 
 with st.expander("Clientes Activos"):
-
     if not df.empty:
         st.dataframe(
             df[["Nombre", "Plataformas", "Dia", "Total a Pagar"]],
@@ -155,4 +154,3 @@ with st.expander("Clientes Activos"):
         )
     else:
         st.info("No hay clientes registrados aún.")
-
