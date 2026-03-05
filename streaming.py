@@ -72,7 +72,7 @@ df["Dia"] = pd.to_numeric(df["Dia"], errors="coerce")
 # 🔴 1. ALERTAS
 # =========================================================
 
-with st.expander("🔔 Alertas de Pago", expanded=True):
+with st.expander("Alertas de Pago", expanded=True):
 
     hoy = datetime.now().day
     clientes_hoy = df[df["Dia"] == hoy]
@@ -97,7 +97,7 @@ with st.expander("🔔 Alertas de Pago", expanded=True):
 # 🟣 2. NUEVOS CLIENTES
 # =========================================================
 
-with st.expander("➕ Nuevo Cliente"):
+with st.expander("Nuevo Cliente"):
 
     with st.form("nuevo_cliente", clear_on_submit=True):
         nombre = st.text_input("Nombre", placeholder="Escribe el nombre...")
@@ -124,7 +124,7 @@ with st.expander("➕ Nuevo Cliente"):
 # 🟡 3. GESTIONAR
 # =========================================================
 
-with st.expander("⚙️ Gestionar Clientes"):
+with st.expander("Gestionar Clientes"):
 
     if not df.empty:
         borrar = st.selectbox("Seleccionar cliente", df["Nombre"].unique())
@@ -139,7 +139,7 @@ with st.expander("⚙️ Gestionar Clientes"):
 # 🔵 4. CLIENTES ACTIVOS (AHORA EN PANEL)
 # =========================================================
 
-with st.expander("📋 Clientes Activos"):
+with st.expander("Clientes Activos"):
 
     if not df.empty:
         st.dataframe(
@@ -155,3 +155,4 @@ with st.expander("📋 Clientes Activos"):
         )
     else:
         st.info("No hay clientes registrados aún.")
+
